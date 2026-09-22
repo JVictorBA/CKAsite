@@ -1,0 +1,17 @@
+{
+  "id": "./",
+  "name": "CKA Kart — Campeonato 2026",
+  "short_name": "CKA Kart",
+  "description": "Classificação, equipes, pilotos e resultados do campeonato CKA.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#090b10",
+  "theme_color": "#090b10",
+  "icons": [
+    { "src": "assets/pwa-icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "assets/pwa-icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "assets/pwa-icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
