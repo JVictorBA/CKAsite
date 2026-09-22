@@ -159,3 +159,67 @@ footer{border-color:rgba(74,145,209,.25);color:#8da6c0}.avatar{box-shadow:0 0 0 
 <script>(function(){var box=document.querySelector('#resultbuttons'),results=document.querySelector('#results');if(!box||!results)return;var stage7=[['Marcelo Albuquerque','47.532','-'],['Miro','47.433','+3.182'],['Leonardo Rocha','47.697','+6.981'],['André Afonso','47.561','+8.205'],['Luiz Costa','47.343','+10.367'],['João Araujo','47.811','+11.284'],['Alexandre Reis','47.791','+11.422'],['Piloto não identificado','47.644','+16.245'],['Ricardo Menezes','47.924','+22.316'],['Henrique Oliveira','48.216','+24.184'],['Sardinha','48.272','+31.822'],['Anderson Poubel','48.556','+32.727'],['Bernardo Gaertner','48.174','+39.397'],['Pedro Pitanga','48.740','+43.777'],['Jose Silva','48.373','1 Lap'],['Andre Rodrigues','48.608','+12.072'],['Adilson Filho','48.931','+12.309'],['Antonio Junior','47.154','+43.919'],['Anderson Pires','49.432','+48.838']];function draw(i){var list=i===6?stage7.map(function(x,j){return{p:j+1,n:x[0],b:x[1],d:x[2]}}):Array.from(document.querySelectorAll('#classification .row:not(.headrow)')).map(function(r){var c=r.querySelectorAll('.stage')[i],n=r.querySelector('.pilot strong');return{p:parseInt(c&&c.textContent)||0,n:n?n.textContent.trim():'',b:'—',d:'—'}}).filter(function(x){return x.p}).sort(function(a,b){return a.p-b.p});results.innerHTML='<div class="resultrow"><span>Posição</span><span>Piloto</span><span>Melhor volta</span><span>Diferença</span></div>'+list.map(function(x){return '<div class="resultrow"><b>'+x.p+'º</b><span class="result-pilot"><span class="placeholder"></span><strong>'+x.n+'</strong></span><span>'+x.b+'</span><span>'+x.d+'</span></div>'}).join('')}Array.from(box.querySelectorAll('.result-btn')).forEach(function(old,i){var b=old.cloneNode(true);b.disabled=i>6;b.textContent=stages[i][0]+(i>6?' · Ainda não realizada':'');b.onclick=function(){if(i>6)return;box.querySelectorAll('.result-btn').forEach(function(x){x.classList.remove('active')});b.classList.add('active');draw(i)};old.replaceWith(b)});draw(6)})();</script>
 <script>(function(){var b=document.querySelectorAll('#resultbuttons .result-btn'),o=document.querySelector('#results');if(!b.length||!o)return;var d={3:[['00:46.511','---'],['00:46.640','00:07.209'],['00:46.833','00:09.865'],['00:46.770','00:12.142'],['00:46.739','00:12.532'],['00:47.464','00:30.087'],['00:46.885','00:30.172'],['00:47.683','00:34.845'],['00:47.575','00:35.162'],['00:47.856','00:42.788'],['00:47.899','-1 volta'],['00:47.749','-1 volta'],['00:47.278','-1 volta'],['00:48.754','-1 volta'],['00:49.228','-1 volta']],4:[['00:46.518','---'],['00:47.165','00:11.071'],['00:47.080','00:16.511'],['00:47.249','00:16.842'],['00:47.000','00:17.877'],['00:47.485','00:26.670'],['00:46.879','00:31.515'],['00:47.510','00:32.605'],['00:47.235','00:34.868'],['00:47.406','00:38.048'],['00:47.780','00:38.551'],['00:48.037','00:41.212'],['00:47.621','00:43.901'],['00:47.958','-1 volta']]};function f(i){if(!d[i])return;var r=o.querySelectorAll('.resultrow:not(:first-child)');d[i].forEach(function(x,j){if(r[j]){r[j].children[2].textContent=x[0];r[j].children[3].textContent=x[1]}})}b.forEach(function(x,i){x.addEventListener('click',function(){setTimeout(function(){f(i)},10)},true)});})();</script>
 <style>body{visibility:hidden}body.ready{visibility:visible}.transition-kart{width:210px;height:150px;font-size:0}.transition-kart img{width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 0 18px rgba(255,212,42,.7))}</style><script>document.addEventListener('DOMContentLoaded',function(){document.body.classList.add('ready');var o=document.querySelector('#tab-transition');if(o){var k=o.querySelector('.transition-kart');if(k){k.innerHTML='<img src="assets/cka-mark.png" alt="CKA">';k.setAttribute('aria-label','CKA')}}});</script>
+<style>
+/* Responsive tables: expose every column as readable labels on narrow screens. */
+.pilot-card img{object-fit:contain!important;object-position:center center!important;}
+@media(max-width:640px){
+  html,body{max-width:100%;overflow-x:hidden}
+  .wrap{width:calc(100% - 20px);max-width:100%}
+  .top{height:auto;min-height:0;margin:8px auto 0;padding:10px 12px;border-radius:18px;display:flex;flex-wrap:wrap;gap:10px;justify-content:space-between;overflow:visible}
+  .top .brand{display:flex;position:static;font-size:15px}
+  .top .brand img{width:30px;height:30px}
+  .top .tabs{position:static;width:100%;margin:0;padding:0;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px;overflow:visible}
+  .top .tab{min-width:0;padding:9px 4px;font-size:10px;white-space:normal;line-height:1.15}
+  .hero{margin:12px 0 18px;padding:24px 20px;min-height:0}
+  .hero h1{font-size:clamp(34px,10vw,44px);line-height:.98}
+  .hero p{font-size:15px;line-height:1.4}
+  .head{display:block;margin:18px 0 12px}
+  .head h2{font-size:24px;line-height:1.12}
+  .head p{margin:7px 0 0;font-size:13px}
+  .scroll{overflow:visible;border:0;box-shadow:none}
+  .table{min-width:0;width:100%}
+  .row.headrow{display:none}
+  .row:not(.headrow){display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px 6px;padding:12px 10px;margin:0 0 9px;border:1px solid rgba(91,139,183,.26);border-radius:12px;min-height:0;overflow:hidden}
+  .row:not(.headrow)>*{min-width:0;text-align:center;white-space:normal;overflow-wrap:anywhere;font-size:12px}
+  .row:not(.headrow)>.pos{grid-column:span 1;font-size:16px;text-align:left}
+  .row:not(.headrow)>.pilot{grid-column:span 3;text-align:left;gap:7px}
+  .row:not(.headrow)>.pilot strong{font-size:13px}
+  .row:not(.headrow)>.pilot small{display:none}
+  .row:not(.headrow)>.team{grid-column:span 2;text-align:left;align-self:center}
+  .row:not(.headrow)>.points:first-of-type{grid-column:span 2;text-align:right;font-size:16px}
+  .row:not(.headrow)>.stage{padding:5px 2px;border-radius:6px;background:rgba(255,255,255,.035);font-size:11px}
+  .row:not(.headrow)>:nth-child(n+16){padding:4px 1px;background:rgba(255,255,255,.035);border-radius:6px}
+  .row:not(.headrow)>[data-label]::before{content:attr(data-label);display:block;color:#90a4bc;font-size:8px;line-height:1.1;letter-spacing:.02em;text-transform:uppercase;margin-bottom:3px}
+  .row:not(.headrow)>.pilot[data-label]::before,.row:not(.headrow)>.pos[data-label]::before{display:none}
+  .row:not(.headrow)>.pilot .avatar,.row:not(.headrow)>.pilot .placeholder{width:34px;height:34px;min-width:34px}
+  .teams{min-width:0;width:100%}
+  .teamrow.headrow{display:none}
+  .teamrow:not(.headrow){display:grid;grid-template-columns:48px minmax(0,1fr) 72px;gap:6px;padding:14px 12px;margin:0 0 8px;border:1px solid rgba(91,139,183,.24);border-radius:12px;min-width:0}
+  .teamrow:not(.headrow)>*:nth-child(2){overflow-wrap:anywhere}
+  .teamrow:not(.headrow)>:nth-child(3){text-align:right;font-size:17px}
+  .teamrow:not(.headrow)>:nth-child(4){grid-column:2/4;color:#9eacc0;font-size:11px;line-height:1.35}
+  .teamrow:not(.headrow)>[data-label]::before,.resultrow:not(:first-child)>[data-label]::before{content:attr(data-label);display:block;color:#90a4bc;font-size:8px;text-transform:uppercase;letter-spacing:.03em;margin-bottom:3px}
+  .pilot-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:10px!important}
+  .pilot-card{min-width:0;overflow:hidden}
+  .pilot-card img{width:100%!important;height:150px!important;max-height:150px!important;object-fit:contain!important;object-position:center center!important}
+  .pilot-card h3{font-size:13px!important;line-height:1.2;overflow-wrap:anywhere}
+  .pilotcards{min-width:0;overflow:visible;border:0;box-shadow:none;display:block}
+  .pilotcard:first-child{display:none}
+  .pilotcard:not(:first-child){display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;padding:12px;margin:0 0 9px;border:1px solid rgba(91,139,183,.25);border-radius:12px;min-width:0}
+  .pilotcard:not(:first-child) .pilotinfo{grid-column:1/-1;min-width:0}
+  .pilotcard:not(:first-child) .pilotinfo strong{font-size:14px;overflow-wrap:anywhere}
+  .pilotcard:not(:first-child)>span,.pilotcard:not(:first-child)>strong{padding:6px;background:rgba(255,255,255,.035);border-radius:7px;text-align:center;font-size:12px}
+  .pilotcard:not(:first-child) .points{text-align:center;font-size:16px}
+  .result-buttons{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;overflow:visible;padding:0 0 10px}
+  .result-btn{min-width:0;white-space:normal;text-align:center;padding:9px 5px;font-size:11px;line-height:1.2}
+  .results{min-width:0;width:100%;overflow:visible;border:0;box-shadow:none}
+  .resultrow:first-child{display:none}
+  .resultrow:not(:first-child){display:grid;grid-template-columns:48px minmax(0,1fr) 1fr 1fr;gap:5px;align-items:center;padding:11px 8px;margin:0 0 8px;border:1px solid rgba(91,139,183,.24);border-radius:11px;min-width:0}
+  .resultrow:not(:first-child)>b{text-align:left;font-size:15px}
+  .resultrow:not(:first-child)>.result-pilot{grid-column:span 3;min-width:0;gap:7px;overflow-wrap:anywhere;font-size:12px}
+  .resultrow:not(:first-child)>.result-pilot img,.resultrow:not(:first-child)>.result-pilot .placeholder{width:30px;height:30px;min-width:30px}
+  .resultrow:not(:first-child)>[data-label]{font-size:11px;text-align:center}
+  footer{display:grid;gap:6px;line-height:1.35}
+}
+</style>
+<script>(function(){function labelRows(root,selector,headerSelector){var table=document.querySelector(root);if(!table)return;var head=table.querySelector(headerSelector),labels=head?Array.from(head.children).map(function(x){return x.textContent.trim()}):[];table.querySelectorAll(selector).forEach(function(row){if(row===head)return;Array.from(row.children).forEach(function(cell,i){if(labels[i])cell.setAttribute('data-label',labels[i])})})}function update(){labelRows('#classification','.row','.headrow');labelRows('#teams','.teamrow','.teamrow.headrow');labelRows('#results .results','.resultrow','.resultrow:first-child');var r=document.querySelector('#results');if(r){var h=r.querySelector('.resultrow:first-child');if(h){var labels=Array.from(h.children).map(function(x){return x.textContent.trim()});r.querySelectorAll('.resultrow:not(:first-child)').forEach(function(row){Array.from(row.children).forEach(function(cell,i){if(labels[i])cell.setAttribute('data-label',labels[i])})})}}}update();var observer=new MutationObserver(update);['#classification','#teams','#results'].forEach(function(s){var node=document.querySelector(s);if(node)observer.observe(node,{childList:true,subtree:true})});})();</script>
