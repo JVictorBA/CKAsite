@@ -231,4 +231,35 @@ footer{border-color:rgba(74,145,209,.25);color:#8da6c0}.avatar{box-shadow:0 0 0 
   footer{display:grid;gap:6px;line-height:1.35}
 }
 </style>
+<style>
+@media(max-width:640px){
+  #classificacao .scroll{max-height:72dvh;overflow:auto;border:1px solid rgba(74,145,209,.35);border-radius:12px}
+  #classificacao .table{width:max-content;min-width:1300px}
+  #classificacao .row:not(.headrow){display:grid;grid-template-columns:48px 160px 105px 62px repeat(11,62px) 55px 60px 65px 65px;gap:0;padding:0 6px;margin:0;border:0;border-top:1px solid rgba(91,139,183,.2);border-radius:0;min-height:50px;overflow:visible}
+  #classificacao .row.headrow{display:grid;position:sticky;top:0;z-index:30;grid-template-columns:48px 160px 105px 62px repeat(11,62px) 55px 60px 65px 65px;gap:0;padding:0 6px;min-height:48px;background:#14283b!important}
+  #classificacao .row:not(.headrow)>[data-label]::before{display:none}
+  #classificacao .row:not(.headrow)>.pos{position:sticky;left:6px;z-index:20;background:#101d2e!important;grid-column:auto;text-align:left;padding-left:5px}
+  #classificacao .row:not(.headrow)>.pilot{position:sticky;left:54px;z-index:20;background:#101d2e!important;grid-column:auto;min-width:160px;text-align:left}
+  #classificacao .row.headrow>:nth-child(-n+2){position:sticky;z-index:40;background:#14283b!important}
+  #classificacao .row.headrow>:first-child{left:6px}
+  #classificacao .row.headrow>:nth-child(2){left:54px}
+  #classificacao .row:not(.headrow):nth-child(even)>.pos,#classificacao .row:not(.headrow):nth-child(even)>.pilot{background:#132238!important}
+  #classificacao .row:not(.headrow)>.points{font-size:14px}
+  #teams .teams{min-width:0;width:100%}
+  #teams .teamrow:not(.headrow){grid-template-columns:48px minmax(0,1fr) 78px;align-items:center;gap:6px;padding:12px 10px}
+  #teams .teamrow:not(.headrow)>.team-details{grid-column:2;grid-row:1;min-width:0}
+  #teams .teamrow:not(.headrow)>strong.points,#teams .teamrow:not(.headrow)>:nth-child(3){display:block!important;visibility:visible!important;opacity:1!important;grid-column:3;grid-row:1;text-align:right;font-size:18px;color:var(--gold)}
+  #teams .teamrow:not(.headrow)>:nth-child(4){grid-column:1/-1}
+  #resultados .results{min-width:0;width:100%;overflow:hidden}
+  #resultados .resultrow:first-child{display:grid;grid-template-columns:38px minmax(0,1fr) 74px 68px;gap:4px;padding:9px 6px;position:sticky;top:0;z-index:2}
+  #resultados .resultrow:first-child>span{min-width:0;white-space:normal;text-align:center;font-size:8px;line-height:1.15;overflow-wrap:anywhere}
+  #resultados .resultrow:not(:first-child){display:grid;grid-template-columns:38px minmax(0,1fr) 74px 68px;grid-template-rows:1fr;gap:4px;align-items:center;padding:8px 6px;margin:0;border:0;border-top:1px solid rgba(91,139,183,.2);border-radius:0;min-width:0;overflow:hidden}
+  #resultados .resultrow:not(:first-child)>b{grid-column:auto;grid-row:auto;text-align:left;font-size:12px}
+  #resultados .resultrow:not(:first-child)>.result-pilot{grid-column:auto;grid-row:auto;display:flex;min-width:0;gap:5px;white-space:nowrap;overflow:hidden;font-size:10px}
+  #resultados .resultrow:not(:first-child)>.result-pilot strong{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  #resultados .resultrow:not(:first-child)>:nth-child(3),#resultados .resultrow:not(:first-child)>:nth-child(4){grid-column:auto;grid-row:auto;min-width:0;text-align:center;font-size:10px;white-space:nowrap}
+  #resultados .resultrow:not(:first-child)>[data-label]::before{display:none}
+  #resultados .resultrow .result-pilot img,#resultados .resultrow .result-pilot .placeholder{width:24px;height:24px;min-width:24px}
+}
+</style>
 <script>(function(){function labelRows(root,selector,headerSelector){var table=document.querySelector(root);if(!table)return;var head=table.querySelector(headerSelector),labels=head?Array.from(head.children).map(function(x){return x.textContent.trim()}):[];table.querySelectorAll(selector).forEach(function(row){if(row===head)return;Array.from(row.children).forEach(function(cell,i){if(labels[i])cell.setAttribute('data-label',labels[i])})})}function dedupeButtons(){var box=document.querySelector('#resultbuttons');if(!box)return;var seen={};Array.from(box.querySelectorAll('.result-btn')).forEach(function(button){var key=button.textContent.replace(/\s+/g,' ').trim();if(seen[key])button.remove();else seen[key]=true})}function update(){labelRows('#classification','.row','.headrow');labelRows('#teams','.teamrow','.teamrow.headrow');var r=document.querySelector('#results');if(r){var h=r.querySelector('.resultrow:first-child');if(h){var labels=Array.from(h.children).map(function(x){return x.textContent.trim()});r.querySelectorAll('.resultrow:not(:first-child)').forEach(function(row){Array.from(row.children).forEach(function(cell,i){if(labels[i])cell.setAttribute('data-label',labels[i])})})}}dedupeButtons()}update();var observer=new MutationObserver(update);['#classification','#teams','#results','#resultbuttons'].forEach(function(s){var node=document.querySelector(s);if(node)observer.observe(node,{childList:true,subtree:true})})})();</script>
