@@ -347,23 +347,36 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
     #classification .pilot strong,#teams .teamrow strong,#teams .teamrow b{color:#fff!important}
     #classification .team,#teams .teamrow>span:last-child{color:#a5adba!important}
     #classification .points,#teams .points{color:var(--gold)!important}
+    #classification .penalty-mark{display:inline-flex!important;width:15px;height:15px;align-items:center;justify-content:center;margin-left:4px;border-radius:50%;background:#7f1d1d;color:#fecaca;font-size:11px;font-weight:900;line-height:1;vertical-align:1px}
+    #classification .penalty-total{color:#ff8585!important;font-weight:800!important;text-align:center!important}
+    #classification .pilot-ledger{display:none!important}
     #classification .pos,#teams .teamrow b{color:#d8dce3!important}
     #classification .row:nth-child(2) .pos,#teams .teamrow:nth-child(2) b{color:var(--gold)!important}
     #classification .row:nth-child(3) .pos,#teams .teamrow:nth-child(3) b{color:#c9ced6!important}
     #classification .row:nth-child(4) .pos,#teams .teamrow:nth-child(4) b{color:#b98356!important}
     #classification .avatar,#classification .placeholder,#teams .avatar,#teams .placeholder{border-color:var(--border)!important;background-color:#191d25!important}
-    #teams .team-stage-breakdown{margin:12px 0 4px!important;padding:12px!important;border:1px solid var(--border)!important;border-radius:8px!important;background:#101319!important;box-shadow:none!important}
-    #teams .team-stage-breakdown h4{margin:0 0 9px!important;color:var(--gold)!important;font-size:10px!important;letter-spacing:.1em!important}
-    #teams .team-stage-line{grid-template-columns:90px minmax(0,1fr) 58px!important;gap:8px!important;padding:8px 2px!important;border:0!important;border-top:1px solid rgba(255,255,255,.07)!important;background:transparent!important;color:var(--text-primary)!important;font-size:12px!important}
-    #teams .team-stage-line:first-of-type{border-top:0!important}
-    #teams .team-stage-line span:first-child{color:var(--text-muted)!important}
-    #teams .team-stage-line span:nth-child(2){color:#e8eaf0!important}
-    #teams .team-stage-line b{color:var(--gold)!important}
-    #teams .team-details summary{color:#fff!important}
-    #teams .team-details summary:after{color:var(--gold)!important}
-    #teams .team-details ul{border-color:var(--border)!important;color:var(--text-muted)!important}
-    #teams .team-details li img,#teams .team-details li .placeholder{background-color:#191d25!important}
-    @media(max-width:560px){#teams .team-stage-breakdown{padding:9px!important}#teams .team-stage-line{grid-template-columns:67px minmax(0,1fr) 48px!important;gap:5px!important;font-size:11px!important}}
+    #teams .teamrow:not(.headrow){grid-template-columns:58px minmax(0,1fr) 90px!important;align-items:start!important}
+    #teams .teamrow.headrow{grid-template-columns:58px minmax(0,1fr) 90px!important}
+    #teams .team-details{display:block!important;min-width:0!important;width:100%!important}
+    #teams .team-toggle{display:flex!important;width:100%!important;min-width:0!important;align-items:center!important;justify-content:space-between!important;gap:12px!important;padding:4px 0!important;border:0!important;background:transparent!important;color:#fff!important;font:inherit!important;font-weight:800!important;text-align:left!important;cursor:pointer!important}
+    #teams .team-toggle:focus-visible{outline:2px solid var(--gold)!important;outline-offset:4px!important}
+    #teams .team-toggle-mark{display:inline-flex!important;width:24px;height:24px;flex:0 0 24px;align-items:center;justify-content:center;border:1px solid rgba(212,175,55,.4);border-radius:50%;color:var(--gold);font-size:17px;line-height:1}
+    #teams .team-details-content[hidden]{display:none!important}
+    #teams .team-details-content:not([hidden]){display:block!important;width:100%!important;min-width:0!important}
+    #teams .team-member-strip{display:flex!important;flex-wrap:nowrap!important;gap:14px!important;width:100%!important;min-width:0!important;overflow-x:auto!important;padding:12px 2px!important;scrollbar-color:var(--gold) #14181f;scroll-snap-type:x proximity}
+    #teams .team-member{display:flex!important;flex:0 0 auto!important;align-items:center!important;gap:8px!important;max-width:190px!important;color:#e8eaf0!important;font-size:12px!important;white-space:nowrap!important;scroll-snap-align:start}
+    #teams .team-member img,#teams .team-member .placeholder{display:block!important;width:42px!important;height:42px!important;min-width:42px!important;flex:0 0 42px!important;border-radius:50%!important;object-fit:cover!important;background-color:#191d25!important}
+    #teams .team-score-table-wrap{width:100%!important;max-width:100%!important;overflow:auto!important;border:1px solid var(--border)!important;border-radius:8px!important;background:#101319!important;-webkit-overflow-scrolling:touch}
+    #teams .team-score-table{width:100%!important;min-width:1120px!important;border-collapse:collapse!important;font-size:11px!important}
+    #teams .team-score-table th,#teams .team-score-table td{padding:9px 10px!important;border-bottom:1px solid rgba(255,255,255,.07)!important;text-align:center!important;white-space:nowrap!important}
+    #teams .team-score-table thead th{position:sticky!important;top:0!important;background:#1a2028!important;color:var(--text-muted)!important;font-size:10px!important;text-transform:uppercase!important;z-index:1}
+    #teams .team-score-table th:first-child,#teams .team-score-table td:first-child{position:sticky!important;left:0!important;min-width:190px!important;text-align:left!important;background:#14181f!important;z-index:2}
+    #teams .team-score-pilot{display:flex!important;align-items:center!important;gap:8px!important;color:#fff!important;font-weight:700!important}
+    #teams .team-score-pilot img,#teams .team-score-pilot .placeholder{display:block!important;width:30px!important;height:30px!important;min-width:30px!important;flex:0 0 30px!important;border-radius:50%!important;object-fit:cover!important}
+    #teams .team-score-table td{color:#e8eaf0!important}
+    #teams .team-score-table .team-score-total td{color:var(--gold)!important;font-weight:800!important;border-top:1px solid rgba(212,175,55,.35)!important}
+    #teams .team-score-table .penalty-mark{display:inline-flex!important;width:14px;height:14px;align-items:center;justify-content:center;margin-left:3px;border-radius:50%;background:#7f1d1d;color:#fecaca;font-size:10px;font-weight:900;vertical-align:1px}
+    @media(max-width:560px){#teams .teamrow:not(.headrow){grid-template-columns:42px minmax(0,1fr) 62px!important;gap:6px!important;padding:12px 8px!important}#teams .teamrow.headrow{grid-template-columns:42px minmax(0,1fr) 62px!important;padding:10px 8px!important}#teams .team-member-strip{gap:10px!important}#teams .team-member img,#teams .team-member .placeholder{width:38px!important;height:38px!important;min-width:38px!important;flex-basis:38px!important}#teams .team-score-table{min-width:1040px!important}#teams .team-score-table th:first-child,#teams .team-score-table td:first-child{min-width:155px!important}}
     *{scrollbar-color:#d4af37 #14181f;scrollbar-width:thin}
     *::-webkit-scrollbar{width:8px;height:8px}
     *::-webkit-scrollbar-track{border-radius:8px;background:#14181f}
@@ -397,7 +410,8 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
       #classification .row:not(.headrow)>.pos{position:static!important;padding-left:0!important;font-size:14px!important;font-weight:800!important}
       #classification .row:not(.headrow)>.pilot{position:static!important;display:flex!important;min-width:0!important;gap:9px!important;white-space:normal!important}
       #classification .row:not(.headrow)>.pilot strong{min-width:0!important;overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important;font-size:13px!important}
-      #classification .row:not(.headrow)>.pilot small{display:none!important}
+      #classification .row:not(.headrow)>.pilot small:not(.pilot-ledger){display:none!important}
+      #classification .row:not(.headrow)>.pilot .pilot-ledger{display:block!important;max-width:100%!important;margin-top:3px!important;color:var(--text-muted)!important;font-size:9px!important;line-height:1.3!important;white-space:normal!important}
       #classification .row:not(.headrow)>.pilot .avatar,#classification .row:not(.headrow)>.pilot .placeholder{width:38px!important;height:38px!important;min-width:38px!important;flex:0 0 38px!important}
       #classification .row:not(.headrow)>.points{font-size:16px!important;text-align:right!important}
       #classification .row.headrow>:first-child{grid-column:1!important}
@@ -518,8 +532,17 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
   };
   const avatarMarkup = pilot => {
     const src = photoUrl(pilot);
-    return src ? `<img class="avatar" loading="lazy" src="${html(src)}" alt="Foto de ${html(pilot.display_name)}">` : '<span class="placeholder" aria-hidden="true"></span>';
+    const fallback = assetPhoto(pilot?.display_name || pilot?.full_name || '');
+    const fallbackAttr = fallback && fallback !== src ? ` data-fallback-src="${html(fallback)}"` : '';
+    return src ? `<img class="avatar" loading="lazy" src="${html(src)}"${fallbackAttr} alt="Foto de ${html(pilot.display_name || pilot.full_name)}">` : '<span class="placeholder" aria-hidden="true"></span>';
   };
+  document.addEventListener('error', event => {
+    const image = event.target;
+    if (image instanceof HTMLImageElement && image.dataset.fallbackSrc) {
+      image.removeAttribute('data-fallback-src');
+      image.src = image.dataset.fallbackSrc;
+    }
+  }, true);
   const lapText = ms => ms == null ? '—' : `${String(Math.floor(ms / 60000)).padStart(2,'0')}:${String(Math.floor(ms / 1000) % 60).padStart(2,'0')}.${String(ms % 1000).padStart(3,'0')}`;
   async function refreshPublicData() {
     try {
@@ -576,29 +599,40 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
       const entries = publicState.stagePoints.filter(row => row.pilot_id === pilot.id && raceById.has(row.race_id));
       const byRound = new Map(entries.map(row => [row.round_number, row]));
       const discardCount = Math.min(2, Math.max(0, races.length - 1));
-      const scoreOf = row => (Number(row.race_points)||0) + (Number(row.bonus_points)||0) - (Number(row.penalty_points)||0);
-      const discardedEntries = [...entries].sort((a,b)=>scoreOf(a)-scoreOf(b)||Number(a.round_number)-Number(b.round_number)).slice(0,discardCount);
+      const scoreOf = row => (Number(row.race_points)||0) - (Number(row.penalty_points)||0);
+      const positionForDiscard = row => {
+        const position=Number(row.finish_position);
+        return row.finish_position==null||!Number.isFinite(position)||position<1?Number.POSITIVE_INFINITY:position;
+      };
+      const discardedEntries = [...entries].sort((a,b)=>{
+        const byWorstPosition=positionForDiscard(b)-positionForDiscard(a);
+        return Number.isNaN(byWorstPosition)||byWorstPosition===0?Number(a.round_number)-Number(b.round_number):byWorstPosition;
+      }).slice(0,discardCount);
       const discarded = new Set(discardedEntries.map(row=>Number(row.round_number)));
-      const finalPoints = entries.reduce((sum,row)=>sum+scoreOf(row),0)-discardedEntries.reduce((sum,row)=>sum+scoreOf(row),0);
+      const bonusTotal=entries.reduce((sum,row)=>sum+(Number(row.bonus_points)||0),0);
+      const finalPoints = entries.reduce((sum,row)=>sum+scoreOf(row),0)+bonusTotal-discardedEntries.reduce((sum,row)=>sum+scoreOf(row),0);
       const team = publicState.teams.find(item => item.id === pilot.default_team_id);
       const podiums = entries.filter(row => row.result_status === 'finished' && Number(row.finish_position) <= 5).length;
       return { ...pilot, stats, teamName: team?.name || 'Sem equipe', byRound, discarded, podiums, wins: Number(stats.wins) || 0, finalPoints };
     }).sort((a,b) => b.finalPoints - a.finalPoints || a.pilot_number - b.pilot_number);
-    const heading = ['Pos.','Piloto','Equipe','Pontos',...Array.from({length:11},(_,i)=>`Etapa ${i+1}`),'Bônus','Saldo','Descarte 1','Descarte 2'];
+    const heading = ['Pos.','Piloto','Equipe','Pontos',...Array.from({length:11},(_,i)=>`Etapa ${i+1}`),'Bônus','Pontos perdidos','Descarte 1','Descarte 2'];
     const header = `<div class="row headrow">${heading.map(label=>`<span>${html(label)}</span>`).join('')}</div>`;
     const rows = pilots.map((pilot,index) => {
       const stages = Array.from({length:11},(_,i)=>{
         const round=i+1, entry=pilot.byRound.get(round), race=races.find(item=>item.round_number===round);
         const pos=entry?.finish_position ? `${entry.finish_position}º` : '—';
-        const points=entry ? Number(entry.race_points)||0 : 0;
+        const points=entry ? (Number(entry.race_points)||0)-(Number(entry.penalty_points)||0) : 0;
+        const warning=entry&&Number(entry.penalty_points)>0?'<span class="penalty-mark" title="Advertência: pontuação reduzida" aria-label="Recebeu advertência">!</span>':'';
         const klass=pos==='1º'?'gold':pos==='2º'?'silver':pos==='3º'?'bronze':pos==='—'?'future':'';
-        return `<span class="stage ${klass}" data-label="Etapa ${round}"><span>${pos}</span>${race?`<small>${points} pts</small>`:''}</span>`;
+        return `<span class="stage ${klass}" data-label="Etapa ${round}"><span>${pos}</span>${race?`<small>${points} pts${warning}</small>`:''}</span>`;
       }).join('');
       const bonus=Number(pilot.stats.bonus_points)||0, penalty=Number(pilot.stats.penalty_points)||0;
       const discardValues=[...pilot.discarded].map(Number).map(round=>{
-        const entry=pilot.byRound.get(round);return entry ? (Number(entry.race_points)+Number(entry.bonus_points||0)-Number(entry.penalty_points||0)) : 0;
+        const entry=pilot.byRound.get(round);return entry ? (Number(entry.race_points)-Number(entry.penalty_points||0)) : 0;
       }).sort((a,b)=>a-b);
-      const row=`<div class="row" data-pilot-id="${html(pilot.id)}"><b class="pos" data-label="Pos.">${index+1}º</b><div class="pilot" data-label="Piloto">${avatarMarkup(pilot)}<span><strong>${html(pilot.display_name)}</strong><small>${index===0?'Líder do campeonato':''}</small></span></div><span class="team" data-label="Equipe">${html(pilot.teamName)}</span><b class="points" data-label="Pontos">${pilot.finalPoints}</b>${stages}<span class="bonus" data-label="Bônus">${bonus}</span><span class="points" data-label="Saldo">${bonus-penalty}</span><span class="discard" data-label="Descarte 1">${discardValues[0] ?? '—'}</span><span class="discard" data-label="Descarte 2">${discardValues[1] ?? '—'}</span></div>`;
+      const penaltyDisplay=penalty?`−${penalty}`:'0';
+      const ledger=`Bônus +${bonus} · Advertências ${penaltyDisplay} pts · Descartes ${discardValues[0] ?? '—'} / ${discardValues[1] ?? '—'}`;
+      const row=`<div class="row" data-pilot-id="${html(pilot.id)}"><b class="pos" data-label="Pos.">${index+1}º</b><div class="pilot" data-label="Piloto">${avatarMarkup(pilot)}<span><strong>${html(pilot.display_name)}</strong><small>${index===0?'Líder do campeonato':''}</small><small class="pilot-ledger">${html(ledger)}</small></span></div><span class="team" data-label="Equipe">${html(pilot.teamName)}</span><b class="points" data-label="Pontos">${pilot.finalPoints}</b>${stages}<span class="bonus" data-label="Bônus">+${bonus}</span><span class="penalty-total" data-label="Pontos perdidos">${penaltyDisplay}</span><span class="discard" data-label="Descarte 1">${discardValues[0] ?? '—'}</span><span class="discard" data-label="Descarte 2">${discardValues[1] ?? '—'}</span></div>`;
       return row;
     }).join('');
     replaceHTML(root,header+rows);
@@ -606,6 +640,16 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
   }
   function renderLiveTeams() {
     const root=document.querySelector('#teams');if(!root)return;
+    if(!root.dataset.teamToggleBound){
+      root.addEventListener('click',event=>{
+        const button=event.target.closest('[data-team-toggle]');if(!button||!root.contains(button))return;
+        const panel=button.parentElement.querySelector('.team-details-content');if(!panel)return;
+        const expanded=button.getAttribute('aria-expanded')!=='true';
+        button.setAttribute('aria-expanded',String(expanded));panel.hidden=!expanded;
+        const mark=button.querySelector('.team-toggle-mark');if(mark)mark.textContent=expanded?'−':'+';
+      });
+      root.dataset.teamToggleBound='true';
+    }
     const races=publicState.races.filter(r=>r.status==='completed'&&r.results_published);
     const driversByTeam=new Map();
     publicState.stagePoints.forEach(row=>{
@@ -614,20 +658,39 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
       if(!driversByTeam.has(key))driversByTeam.set(key,[]);
       driversByTeam.get(key).push(row);
     });
-    const scores=new Map(publicState.teams.map(team=>[team.id,{team,total:0,rounds:new Map(),pilots:new Map()}]));
+    const scores=new Map(publicState.teams.map(team=>[team.id,{team,total:0,rounds:new Map(),pilots:new Map(),pilotScores:new Map()}]));
     driversByTeam.forEach((drivers,key)=>{
       const [teamId,raceId]=key.split(':');const team=scores.get(teamId);if(!team)return;
       const round=Number(publicState.races.find(r=>r.id===raceId)?.round_number);if(!round)return;
       const counted=drivers.sort((a,b)=>(Number(b.race_points)||0)-(Number(a.race_points)||0)||(Number(a.finish_position)||999)-(Number(b.finish_position)||999)||String(a.pilot_id).localeCompare(String(b.pilot_id))).slice(0,2);
-      const points=counted.reduce((sum,item)=>sum+(Number(item.race_points)||0),0);team.total+=points;team.rounds.set(round,{points,drivers:counted});
-      drivers.forEach(item=>{const pilot=publicState.pilots.find(p=>p.id===item.pilot_id);if(pilot)team.pilots.set(pilot.id,pilot);});
+      const netPoints=item=>(Number(item.race_points)||0)+(Number(item.bonus_points)||0)-(Number(item.penalty_points)||0);
+      const points=counted.reduce((sum,item)=>sum+netPoints(item),0);team.total+=points;team.rounds.set(round,{points,drivers:counted});
+      drivers.forEach(item=>{
+        const pilot=publicState.pilots.find(p=>p.id===item.pilot_id);if(!pilot)return;
+        team.pilots.set(pilot.id,pilot);
+        if(!team.pilotScores.has(pilot.id))team.pilotScores.set(pilot.id,{pilot,rounds:new Map(),total:0});
+        const pilotScore=team.pilotScores.get(pilot.id),net=netPoints(item);
+        pilotScore.rounds.set(round,item);pilotScore.total+=net;
+      });
     });
     const ranked=[...scores.values()].sort((a,b)=>b.total-a.total||a.team.name.localeCompare(b.team.name,'pt-BR'));
-    const header='<div class="teamrow headrow"><span>Pos.</span><span>Equipe</span><span>Pontos</span><span>Pilotos</span></div>';
+    const header='<div class="teamrow headrow"><span>Pos.</span><span>Equipe</span><span>Pontos</span></div>';
     replaceHTML(root,header+ranked.map((entry,index)=>{
-      const memberList=[...entry.pilots.values()].map(p=>`<li>${avatarMarkup(p)}<strong>${html(p.display_name)}</strong></li>`).join('');
-      const breakdown=`<div class="team-stage-breakdown"><h4>Pontos da equipe por etapa</h4>${Array.from({length:11},(_,i)=>{const round=i+1,score=entry.rounds.get(round),contributors=score?.drivers.map(d=>`${html(d.pilot_name)} (${Number(d.race_points)||0})`).join(' + ');return `<div class="team-stage-line"><span>Etapa ${round}</span><span>${contributors||'Sem resultado pontuado'}</span><b>${score?.points||0} pts</b></div>`;}).join('')}</div>`;
-      return `<div class="teamrow"><b class="team-position">${index+1}º</b><details class="team-details"><summary>${html(entry.team.name)}</summary><ul>${memberList||'<li>Sem pilotos vinculados</li>'}</ul>${breakdown}</details><strong class="points">${entry.total}</strong><span>${[...entry.pilots.values()].map(p=>html(p.display_name)).join(' · ')||'Sem equipe definida'}</span></div>`;
+      const members=[...entry.pilots.values()].sort((a,b)=>a.display_name.localeCompare(b.display_name,'pt-BR'));
+      const memberStrip=members.map(p=>`<div class="team-member">${avatarMarkup(p)}<span>${html(p.display_name)}</span></div>`).join('')||'<span class="team-muted">Sem pilotos vinculados</span>';
+      const stageHeaders=Array.from({length:11},(_,i)=>`<th scope="col">Etapa ${i+1}</th>`).join('');
+      const pilotRows=[...entry.pilotScores.values()].sort((a,b)=>a.pilot.display_name.localeCompare(b.pilot.display_name,'pt-BR')).map(({pilot,rounds,total})=>{
+        const cells=Array.from({length:11},(_,i)=>{
+          const item=rounds.get(i+1);if(!item)return '<td>—</td>';
+          const net=(Number(item.race_points)||0)+(Number(item.bonus_points)||0)-(Number(item.penalty_points)||0);
+          const warning=Number(item.penalty_points)>0?'<span class="penalty-mark" title="Advertência: pontuação reduzida" aria-label="Recebeu advertência">!</span>':'';
+          return `<td>${net}${warning}</td>`;
+        }).join('');
+        return `<tr><th scope="row"><span class="team-score-pilot">${avatarMarkup(pilot)}${html(pilot.display_name)}</span></th>${cells}<td><strong>${total}</strong></td></tr>`;
+      }).join('');
+      const teamCells=Array.from({length:11},(_,i)=>{const score=entry.rounds.get(i+1);return `<td>${score?score.points: '—'}</td>`;}).join('');
+      const scoresTable=`<div class="team-score-table-wrap"><table class="team-score-table"><thead><tr><th scope="col">Piloto</th>${stageHeaders}<th scope="col">Total piloto</th></tr></thead><tbody>${pilotRows}<tr class="team-score-total"><th scope="row">Total da equipe (2 melhores)</th>${teamCells}<td>${entry.total}</td></tr></tbody></table></div>`;
+      return `<div class="teamrow"><b class="team-position">${index+1}º</b><div class="team-details"><button type="button" class="team-toggle" data-team-toggle aria-expanded="false"><span>${html(entry.team.name)}</span><span class="team-toggle-mark" aria-hidden="true">+</span></button><div class="team-details-content" hidden><div class="team-member-strip">${memberStrip}</div>${scoresTable}</div></div><strong class="points">${entry.total}</strong></div>`;
     }).join(''));
   }
   function renderLivePilots() {
@@ -637,10 +700,11 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
     const ordered=publicState.pilots.map(pilot=>{
       const stats=publicState.standings.find(row=>row.pilot_id===pilot.id)||{};
       const points=publicState.stagePoints.filter(row=>row.pilot_id===pilot.id&&raceIds.has(row.race_id));
-      const scoreOf=row=>(Number(row.race_points)||0)+(Number(row.bonus_points)||0)-(Number(row.penalty_points)||0);
+      const scoreOf=row=>(Number(row.race_points)||0)-(Number(row.penalty_points)||0);
       const discardCount=Math.min(2,Math.max(0,races.length-1));
-      const discarded=[...points].sort((a,b)=>scoreOf(a)-scoreOf(b)||Number(a.round_number)-Number(b.round_number)).slice(0,discardCount);
-      const total=points.reduce((sum,row)=>sum+scoreOf(row),0)-discarded.reduce((sum,row)=>sum+scoreOf(row),0);
+      const positionForDiscard=row=>{const position=Number(row.finish_position);return row.finish_position==null||!Number.isFinite(position)||position<1?Number.POSITIVE_INFINITY:position};
+      const discarded=[...points].sort((a,b)=>{const byWorstPosition=positionForDiscard(b)-positionForDiscard(a);return Number.isNaN(byWorstPosition)||byWorstPosition===0?Number(a.round_number)-Number(b.round_number):byWorstPosition}).slice(0,discardCount);
+      const total=points.reduce((sum,row)=>sum+scoreOf(row),0)+points.reduce((sum,row)=>sum+(Number(row.bonus_points)||0),0)-discarded.reduce((sum,row)=>sum+scoreOf(row),0);
       return {...pilot,stats,points:total,wins:Number(stats.wins)||0,podiums:points.filter(row=>row.result_status==='finished'&&Number(row.finish_position)<=5).length,starts:Number(stats.starts)||0};
     }).sort((a,b)=>b.points-a.points||a.pilot_number-b.pilot_number);
     replaceHTML(root,`<div class="pilot-grid">${ordered.map(p=>`<article class="pilot-card" data-pilot-id="${html(p.id)}">${avatarMarkup(p)}<h3>${html(p.display_name)}</h3><span class="team">${html(publicState.teams.find(t=>t.id===p.default_team_id)?.name||'Sem equipe')}</span><div class="pilot-detail-stats"><div><b>${p.points}</b><span>Pontos</span></div><div><b>${p.wins}</b><span>Vitórias</span></div><div><b>${p.podiums}</b><span>Pódios</span></div><div><b>${p.starts}</b><span>Etapas</span></div></div></article>`).join('')}</div>`);
@@ -669,7 +733,19 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
   const status = (el, text, bad = false) => { const n = el.querySelector('.cka-status'); if(n){n.textContent=text;n.style.color=bad?'#ff9c91':'#8ce0ad';} };
   const showError = (el, error) => { el.innerHTML = `<p class="cka-muted">Não foi possível carregar agora: ${html(error?.message || error)}.</p>`; };
   const assetPhoto = (name) => {
-    const map = {'Alexandre Monnerat':'alexandre-monnerat-cka.png','André Mitta':'andre-mitta-cka.png','Leonardo Rocha':'leonardo-rocha-cka.png','Luiz Felipe':'luiz-felipe-cka.png','Sardinha':'sardinha-cka.png','Bernardo Gaertner':'bernardo-gaertner-cka.png'};
+    const map = {
+      'Alessandro Soares':'alessandro-soares-cka.png',
+      'Alexandre Monnerat':'alexandre-monnerat-cka.png',
+      'André Afonso':'andre-afonso-cka.png',
+      'André Mitta':'andre-mitta-cka.png',
+      'Bernardo Gaertner':'bernardo-gaertner-cka.png',
+      'João Victor Barbosa':'joao-victor-cka.png',
+      'Leonardo Rocha':'leonardo-rocha-cka.png',
+      'Luiz Felipe':'luiz-felipe-cka.png',
+      'Marcelo Albuquerque':'marcelo-albuquerque-cka.png',
+      'Ricardo Finim':'ricardo-finim-cka.png',
+      'Sardinha':'sardinha-cka.png'
+    };
     return map[name] ? `assets/${map[name]}` : '';
   };
   async function loadCalendar() {
