@@ -955,8 +955,43 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
           const row={season_id:race.season_id,race_id:race.id,pilot_id:pilot.id,team_id:tr.querySelector('[name="team_id"]').value||null,status:stat,finish_position:stat==='finished'?(Number(tr.querySelector('[name="finish_position"]').value)||null):null,best_lap_ms:lapText?parseLap(lapText):null,...gap};
           return {pilot,row,shirt,warning};
         });
+        const positions=new Map();
+        for(const item of prepared){
+          const position=item.row.finish_position;
+          if(position==null)continue;
+          const previous=positions.get(position);
+          if(previous)return status(adminBox,`A posição ${position}º está atribuída a dois pilotos: ${previous} e ${item.pilot.display_name}. Corrija antes de salvar.`,true);
+          positions.set(position,item.pilot.display_name);
+        }
+        const {data:currentRows,error:currentRowsError}=await db.from('cka_race_results').select('*').eq('race_id',race.id);
+        if(currentRowsError)return status(adminBox,`Não foi possível conferir os resultados já salvos: ${currentRowsError.message}`,true);
+        const currentByPilot=new Map((currentRows||[]).map(row=>[row.pilot_id,row]));
+        const preparedByPilot=new Map(prepared.map(item=>[item.pilot.id,item]));
+        const removedRows=(currentRows||[]).filter(row=>!preparedByPilot.has(row.pilot_id));
+        const removedIds=removedRows.map(row=>row.pilot_id);
+        const shiftedRows=(currentRows||[]).filter(row=>{
+          const next=preparedByPilot.get(row.pilot_id);
+          return next&&row.finish_position!=null&&Number(row.finish_position)!==Number(next.row.finish_position);
+        });
+        const stagedRows=shiftedRows.map(row=>({...row,status:'dnf',finish_position:null}));
+        if(stagedRows.length){
+          const {error}=await db.from('cka_race_results').upsert(stagedRows,{onConflict:'race_id,pilot_id'});
+          if(error)return status(adminBox,`Não foi possível liberar as posições que foram alteradas: ${error.message}`,true);
+        }
+        if(removedIds.length){
+          const {error}=await db.from('cka_race_results').delete().eq('race_id',race.id).in('pilot_id',removedIds);
+          if(error){
+            if(stagedRows.length)await db.from('cka_race_results').upsert(shiftedRows,{onConflict:'race_id,pilot_id'});
+            return status(adminBox,`Não foi possível remover os pilotos retirados da etapa: ${error.message}`,true);
+          }
+        }
         const {error:resultError}=await db.from('cka_race_results').upsert(prepared.map(item=>item.row),{onConflict:'race_id,pilot_id'});
-        if(resultError)return status(adminBox,`Não foi possível salvar os resultados: ${resultError.message}`,true);
+        if(resultError){
+          const newIds=prepared.filter(item=>!currentByPilot.has(item.pilot.id)).map(item=>item.pilot.id);
+          if(newIds.length)await db.from('cka_race_results').delete().eq('race_id',race.id).in('pilot_id',newIds);
+          if(removedRows.length||shiftedRows.length)await db.from('cka_race_results').upsert([...shiftedRows,...removedRows],{onConflict:'race_id,pilot_id'});
+          return status(adminBox,`Não foi possível salvar os resultados: ${resultError.message}. As posições anteriores foram restauradas; confira os dados e tente novamente.`,true);
+        }
         const pilotIds=prepared.map(item=>item.pilot.id);
         const adjustments=prepared.flatMap(item=>[
           ...(item.shirt?[{season_id:race.season_id,race_id:race.id,pilot_id:item.pilot.id,kind:'bonus',reason_code:'cka_shirt',points:5,note:'Camisa CKA'}]:[]),
@@ -968,6 +1003,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
         const noWarningIds=prepared.filter(item=>!item.warning).map(item=>item.pilot.id);
         if(noShirtIds.length)adjustmentOps.push(db.from('cka_race_adjustments').delete().eq('race_id',race.id).eq('kind','bonus').eq('reason_code','cka_shirt').in('pilot_id',noShirtIds));
         if(noWarningIds.length)adjustmentOps.push(db.from('cka_race_adjustments').delete().eq('race_id',race.id).eq('kind','penalty').eq('reason_code','warning').in('pilot_id',noWarningIds));
+        if(removedIds.length)adjustmentOps.push(db.from('cka_race_adjustments').delete().eq('race_id',race.id).in('pilot_id',removedIds));
         const adjustmentResults=await Promise.all(adjustmentOps);
         const adjustmentFailure=adjustmentResults.find(result=>result.error);
         if(adjustmentFailure)return status(adminBox,`Os resultados foram salvos, mas um bônus/advertência falhou: ${adjustmentFailure.error.message}. Confira os ajustes antes de publicar.`,true);
