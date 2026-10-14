@@ -1,329 +1,22 @@
 (function () {
   'use strict';
 
-  var pilotPhotos = {
-    'andre mitta': 'assets/andre-mitta-cka.png',
-    'leonardo rocha': 'assets/leonardo-rocha-cka.png',
-    'alexandre monnerat': 'assets/alexandre-monnerat-cka.png',
-    'sardinha': 'assets/sardinha-cka.png'
-  };
-  function syncPilotPhotos() {
-    document.querySelectorAll('.pilot-card,.pilot-detail-head,.pilot,.pilotinfo,.result-pilot,.team-details li').forEach(function (wrapper) {
-      var label = wrapper.querySelector('h3,strong');
-      var name = (label ? label.textContent : wrapper.textContent).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, ' ').trim();
-      var photoName = Object.keys(pilotPhotos).find(function (key) { return name.indexOf(key) >= 0; });
-      if (!photoName) return;
-      var image = wrapper.querySelector('img');
-      if (!image) {
-        image = document.createElement('img');
-        image.className = 'avatar';
-        wrapper.insertBefore(image, wrapper.firstChild);
-      }
-      image.src = pilotPhotos[photoName];
-      image.alt = photoName.replace(/\b\w/g, function (letter) { return letter.toUpperCase(); });
-      var placeholder = wrapper.querySelector('.placeholder');
-      if (placeholder) placeholder.remove();
-    });
-  }
-  function removeChampionshipLeaderLabel() {
-    document.querySelectorAll('#classification .pilot small').forEach(function (label) {
-      if (/líder do campeonato/i.test(label.textContent)) label.remove();
-    });
-  }
-  function syncPilotProfilePoints() {
-    function normalizeName(value) {
-      return String(value || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]/g, '');
-    }
-    function statsFor(name) {
-      var wanted = normalizeName(name);
-      var row = Array.prototype.find.call(document.querySelectorAll('#classification .row:not(.headrow)'), function (item) {
-        var label = item.querySelector('.pilot strong');
-        return label && normalizeName(label.textContent) === wanted;
-      });
-      var points = row && row.querySelector('.points');
-      if (!row) return null;
-      var stages = Array.prototype.map.call(row.querySelectorAll('.stage'), function (cell) {
-        var value = parseInt(cell.textContent, 10);
-        return value > 0 ? value : null;
-      }).filter(function (value) { return value !== null; });
-      return {
-        points: points ? points.textContent.trim() : '0',
-        stages: stages.length,
-        wins: stages.filter(function (position) { return position === 1; }).length,
-        podiums: stages.filter(function (position) { return position >= 1 && position <= 5; }).length
-      };
-    }
-    document.querySelectorAll('#pilotcards .pilot-card').forEach(function (card) {
-      var name = card.querySelector('h3');
-      var data = name && statsFor(name.textContent);
-      var value = card.querySelector('.points');
-      if (data && value && value.textContent.trim() !== data.points) value.textContent = data.points;
-    });
-    var detail = document.querySelector('#pilot-detail.active');
-    var heading = detail && detail.querySelector('.pilot-detail-head h3');
-    var data = heading && statsFor(heading.textContent);
-    var stats = detail && detail.querySelectorAll('.pilot-detail-stats > div');
-    if (data && stats && stats.length) {
-      [data.points, data.stages, data.wins, data.podiums,
-        String(data.stages ? Math.round(Number(data.points) / data.stages) : 0)].forEach(function (value, index) {
-        var cell = stats[index] && stats[index].querySelector('b');
-        if (cell && cell.textContent.trim() !== String(value)) cell.textContent = String(value);
-      });
-    }
-  }
-  syncPilotPhotos();
-  removeChampionshipLeaderLabel();
-  syncPilotProfilePoints();
-  var photoObserver = new MutationObserver(function () { syncPilotPhotos(); removeChampionshipLeaderLabel(); });
-  ['#classification', '#pilotcards', '#results', '#teams'].forEach(function (selector) {
-    var node = document.querySelector(selector);
-    if (node) photoObserver.observe(node, { childList: true, subtree: true, characterData: selector === '#classification' });
-  });
-  var profileBox = document.querySelector('#pilotcards');
-  if (profileBox) {
-    var profileObserver = new MutationObserver(function () { syncPilotProfilePoints(); syncPilotPhotos(); });
-    profileObserver.observe(profileBox, { childList: true, subtree: true, characterData: true });
-    profileBox.addEventListener('click', function () { setTimeout(function () { syncPilotProfilePoints(); syncPilotPhotos(); }, 0); });
-    profileBox.addEventListener('keydown', function (event) {
-      if (event.key === 'Enter' || event.key === ' ') setTimeout(function () { syncPilotProfilePoints(); syncPilotPhotos(); }, 0);
-    });
-  }
+  // With Supabase configured, the public tables and statistics are rendered
+  // from the live standings views by cka-site.js; legacy DOM-derived values
+  // must not overwrite those results.
+  if (window.CKA_SUPABASE_CONFIG?.url) return;
 
   var stageScoresByTeam = {};
   var scoreByTeam = {};
   function teamKey(value) {
-    return String(value || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/and/g, '').replace(/[^a-z0-9]/g, '');
-  }
-  var stage8 = [
-    ['Marcelo Albuquerque', 1], ['Leonardo Rocha', 2], ['Luiz Felipe', 3], ['Toninho Macedo', 4],
-    ['João Victor Barbosa', 5], ['Miro', 6], ['André Afonso', 7], ['Alexandre Monnerat', 8],
-    ['Alessandro Soares', 9], ['André Mitta', 10], ['Anderson Poubel', 11], ['Ricardo Finim', 12],
-    ['Henrique Arroz', 13], ['Bernardo Gaertner', 14], ['Sardinha', 15]
-  ];
-  var stage8Points = [20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6];
-  var stage8ByName = {};
-  stage8.forEach(function (entry) { stage8ByName[entry[0]] = entry[1]; });
-  stage8ByName['Marcelo Alburquerque'] = 1;
-  stage8ByName['João Victor'] = 5;
-  stage8ByName['Toninho'] = 4;
-  stage8ByName['Ricardo'] = 12;
-  var stage8Totals = {};
-  var stage8Applied = false;
-  var existingExact = Array.prototype.find.call(document.scripts, function (script) { return script.textContent.indexOf('var exact=') >= 0; });
-  var exactRows = [];
-  if (existingExact) {
-    var matchExact = existingExact.textContent.match(/var exact=(\[[\s\S]*?\]);document\.querySelectorAll/);
-    if (matchExact) { try { exactRows = Function('return ' + matchExact[1])(); } catch (error) { exactRows = []; } }
-  }
-  var resultNameToRowName = { 'Marcelo Albuquerque':'Marcelo Alburquerque', 'João Victor Barbosa':'João Victor Barbosa', 'Toninho Macedo':'Toninho', 'Miro':'Miro', 'Leonardo Rocha':'Leonardo Rocha', 'Luiz Felipe':'Luiz Felipe', 'André Afonso':'André Afonso', 'Alexandre Monnerat':'Alexandre Monnerat', 'Alessandro Soares':'Alessandro Soares', 'André Mitta':'André Mitta', 'Anderson Poubel':'Anderson Poubel', 'Ricardo Finim':'Ricardo Finim', 'Henrique Arroz':'Henrique Arroz', 'Bernardo Gaertner':'Bernardo Gaertner', 'Sardinha':'Sardinha' };
-  var stage8OfficialTimes = [
-    ['Marcelo Albuquerque', '01:04.625', '—'], ['Leonardo Rocha', '01:05.172', '00:26.972'],
-    ['Luiz Felipe', '01:06.792', '00:27.542'], ['Toninho Macedo', '01:04.852', '00:29.019'],
-    ['João Victor Barbosa', '01:04.972', '00:32.076'], ['Miro', '01:05.279', '00:36.964'],
-    ['André Afonso', '01:03.607', '00:51.764'], ['Alexandre Monnerat', '01:04.113', '00:54.283'],
-    ['Alessandro Soares', '01:08.341', '1 volta'], ['André Mitta', '01:06.640', '1 volta'],
-    ['Anderson Poubel', '01:07.742', '1 volta'], ['Ricardo Finim', '01:09.053', '1 volta'],
-    ['Henrique Arroz', '01:06.507', '2 voltas'], ['Bernardo Gaertner', '01:08.664', '2 voltas'],
-    ['Sardinha', '01:10.736', '2 voltas']
-  ];
-  var classification = document.querySelector('#classification');
-  if (classification) {
-    var header = classification.querySelector('.headrow');
-    if (header && header.children[11]) header.children[11].textContent = 'Etapa 8 · Kartódromo do Guará';
-    document.querySelectorAll('#classification .row:not(.headrow)').forEach(function (row) {
-      var nameNode = row.querySelector('.pilot strong');
-      var name = nameNode && nameNode.textContent.trim();
-      var position = stage8ByName[name];
-      var existingStages = row.querySelectorAll('.stage');
-      var priorScores = Array.prototype.slice.call(existingStages, 0, 7).map(function (cell) {
-        var priorPosition = parseInt(cell.textContent, 10);
-        return priorPosition > 0 && priorPosition <= 20 ? 21 - priorPosition : 0;
-      });
-      var bonus = row.querySelector('.bonus');
-      var warning = row.querySelector('.warning');
-      var saldo = bonus ? (parseInt(bonus.textContent, 10) || 0) - (parseInt(warning && warning.textContent, 10) || 0) : 0;
-      var stageCell = document.createElement('span');
-      stageCell.className = 'stage ' + (position === 1 ? 'gold' : position === 2 ? 'silver' : position === 3 ? 'bronze' : position ? '' : 'future');
-      stageCell.innerHTML = position ? '<span>' + position + 'º</span><small>' + stage8Points[position - 1] + ' pts</small>' : '<span>—</span>';
-      if (existingStages.length >= 11) existingStages[7].replaceWith(stageCell);
-      else if (existingStages[6]) existingStages[6].insertAdjacentElement('afterend', stageCell);
-      else row.appendChild(stageCell);
-      var allScores = priorScores.concat(position ? stage8Points[position - 1] : 0);
-      var discarded = allScores.slice().sort(function (a, b) { return a - b; }).slice(0, 2);
-      var total = allScores.reduce(function (sum, score) { return sum + score; }, 0) + saldo - discarded[0] - discarded[1];
-      stage8Totals[name] = { position: position || null, total: total, saldo: saldo };
-    });
-    var orderedRows = Array.prototype.slice.call(document.querySelectorAll('#classification .row:not(.headrow)'));
-    orderedRows.sort(function (a, b) {
-      var an = a.querySelector('.pilot strong').textContent.trim();
-      var bn = b.querySelector('.pilot strong').textContent.trim();
-      var ap = stage8Totals[an], bp = stage8Totals[bn];
-      return (bp.total - ap.total) || (ap.position || 99) - (bp.position || 99);
-    });
-    orderedRows.forEach(function (row, index) {
-      var name = row.querySelector('.pilot strong').textContent.trim();
-      var data = stage8Totals[name];
-      var points = row.querySelectorAll('.points');
-      row.querySelector('.pos').textContent = (index + 1) + 'º';
-      if (points[0]) points[0].textContent = String(data.total);
-    });
-    orderedRows.forEach(function (row) { classification.appendChild(row); });
-    if (exactRows.length) {
-      var refreshedExact = Array.prototype.find.call(document.scripts, function (script) { return script.textContent.indexOf('var exact=') >= 0; });
-      if (refreshedExact) refreshedExact.textContent = refreshedExact.textContent.replace(/var exact=\[[\s\S]*?\];document\.querySelectorAll/, 'var exact=' + JSON.stringify(exactRows) + ';document.querySelectorAll');
-    }
-    document.querySelectorAll('#pilotcards .pilotcard:not(:first-child)').forEach(function (card) {
-      var node = card.querySelector('.pilotinfo strong');
-      if (!node) return;
-      var data = stage8Totals[node.textContent.trim()];
-      var points = card.querySelector('.points');
-      if (data && points) points.textContent = String(data.total);
-      if (data && data.position) {
-        var countCell = card.children[1];
-        if (countCell) countCell.textContent = String((parseInt(countCell.textContent, 10) || 0) + 1);
-      }
-    });
-    document.querySelectorAll('#teams .teamrow:not(.headrow) details').forEach(function (details) {
-      var summary = details.querySelector('summary');
-      var list = details.querySelector('ul');
-      if (summary && teamKey(summary.textContent) === teamKey('EFK') && list &&
-          !Array.prototype.some.call(list.children, function (li) { return li.textContent.indexOf('Adilson Mangiavaki') >= 0; })) {
-        var member = document.createElement('li');
-        member.innerHTML = '<span class="placeholder"></span>Adilson Mangiavaki';
-        list.appendChild(member);
-      }
-    });
-    var stageLabel = document.querySelector('#classificacao .head p');
-    if (stageLabel) stageLabel.textContent = '21 pilotos · 8 etapas realizadas';
-    stage8Applied = true;
-    var resultsBox = document.querySelector('#results');
-    var resultsButtons = document.querySelector('#resultbuttons');
-    if (resultsBox && resultsButtons) {
-      var stage8Button = Array.prototype.find.call(resultsButtons.querySelectorAll('.result-btn'), function (button) { return /Etapa\s*8/i.test(button.textContent); });
-      if (!stage8Button) {
-        stage8Button = document.createElement('button');
-        stage8Button.className = 'result-btn';
-        stage8Button.textContent = 'Etapa 8 · Kartódromo do Guará';
-        resultsButtons.appendChild(stage8Button);
-      }
-      stage8Button.disabled = false;
-      stage8Button.textContent = 'Etapa 8 · Kartódromo do Guará';
-      stage8Button.addEventListener('click', function () {
-        resultsButtons.querySelectorAll('.result-btn').forEach(function (button) { button.classList.toggle('active', button === stage8Button); });
-        resultsBox.innerHTML = '<div class="resultrow"><span>Posição</span><span>Piloto</span><span>Melhor volta</span><span>Diferença</span></div>' + stage8OfficialTimes.map(function (item, index) {
-          return '<div class="resultrow"><b>' + (index + 1) + 'º</b><span class="result-pilot"><span class="placeholder"></span><strong>' + item[0] + '</strong></span><span>' + item[1] + '</span><span>' + item[2] + '</span></div>';
-        }).join('');
-      });
-    }
-  }
-  var officialBonus = { 'Adilson Mangiavaki': 25, 'Derson': 25 };
-  document.querySelectorAll('#classification .row:not(.headrow)').forEach(function (row) {
-    var name = row.querySelector('.pilot strong');
-    var team = row.querySelector('.team');
-    if (!name) return;
-    if (name.textContent.trim() === 'Adilson Mangiavaki') {
-      if (team) team.textContent = 'EFK';
-      var bonus = row.querySelector('.bonus');
-      var warning = row.querySelector('.warning');
-    var points = row.querySelectorAll('.points');
-      var penalty = parseInt(warning && warning.textContent, 10) || 0;
-      if (bonus) bonus.textContent = officialBonus['Adilson Mangiavaki'];
-      if (points[1]) points[1].textContent = officialBonus['Adilson Mangiavaki'] - penalty;
-      if (points[0] && !stage8Applied) points[0].textContent = (parseInt(points[0].textContent, 10) || 0) + 5;
-    }
-    if (name.textContent.trim() === 'Derson') {
-      var dBonus = row.querySelector('.bonus');
-      var dWarning = row.querySelector('.warning');
-      var dPoints = row.querySelectorAll('.points');
-      var dPenalty = parseInt(dWarning && dWarning.textContent, 10) || 0;
-      if (dBonus) dBonus.textContent = officialBonus.Derson;
-      if (dPoints[1]) dPoints[1].textContent = officialBonus.Derson - dPenalty;
-      if (dPoints[0] && !stage8Applied) dPoints[0].textContent = (parseInt(dPoints[0].textContent, 10) || 0) + 5;
-    }
-  });
-
-  var stage8BonusEligible = {
-    'marceloalbuquerque': true, 'marceloalburquerque': true, 'leonardorocha': true, 'luizfelipe': true,
-    'toninhomacedo': true, 'toninho': true, 'joaovictorbarbosa': true, 'joaovictor': true,
-    'miro': true, 'miroaraujo': true, 'andreafonso': true, 'alexandremonnerat': true,
-    'alessandrosoares': true, 'alessandrocka': true, 'andremitta': true,
-    'andersonpoubel': true, 'ricardofinim': true, 'ricardo': true,
-    'henriquearroz': true, 'sardinha': true
-  };
-  function pilotKey(value) {
-    return String(value || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]/g, '');
-  }
-  document.querySelectorAll('#classification .row:not(.headrow)').forEach(function (row) {
-    var nameNode = row.querySelector('.pilot strong');
-    var name = nameNode && nameNode.textContent.trim();
-    var key = pilotKey(name);
-    if (!stage8BonusEligible[key] || key === 'bernardogaertner' || row.dataset.stage8BonusAdded === 'yes') return;
-    var bonus = row.querySelector('.bonus');
-    var points = row.querySelectorAll('.points');
-    if (bonus) bonus.textContent = String((parseInt(bonus.textContent, 10) || 0) + 5);
-    if (points[1]) points[1].textContent = String((parseInt(points[1].textContent, 10) || 0) + 5);
-    if (points[0]) points[0].textContent = String((parseInt(points[0].textContent, 10) || 0) + 5);
-    if (stage8Totals[name]) stage8Totals[name].total += 5;
-    row.dataset.stage8BonusAdded = 'yes';
-  });
-  var bonusUpdatedRows = Array.prototype.slice.call(document.querySelectorAll('#classification .row:not(.headrow)'));
-  bonusUpdatedRows.sort(function (a, b) {
-    return (parseInt(b.querySelectorAll('.points')[0].textContent, 10) || 0) - (parseInt(a.querySelectorAll('.points')[0].textContent, 10) || 0);
-  });
-  bonusUpdatedRows.forEach(function (row, index) {
-    row.querySelector('.pos').textContent = (index + 1) + 'º';
-    classification.appendChild(row);
-  });
-  document.querySelectorAll('#pilotcards .pilotcard:not(:first-child)').forEach(function (card) {
-    var name = card.querySelector('.pilotinfo strong');
-    var points = card.querySelector('.points');
-    var data = name && stage8Totals[name.textContent.trim()];
-    if (points && data) points.textContent = String(data.total);
-  });
-
-  function refreshTeamScores() {
-    var teamStages = {};
-    document.querySelectorAll('#classification .row:not(.headrow)').forEach(function (row) {
-      var team = row.querySelector('.team');
-      if (!team) return;
-      var key = teamKey(team.textContent);
-      var cells = row.querySelectorAll('.stage');
-      Array.prototype.forEach.call(cells, function (cell, index) {
-        var pos = parseInt(cell.textContent, 10);
-        var points = pos > 0 && pos <= 20 ? 21 - pos : 0;
-        if (!teamStages[key]) teamStages[key] = [];
-        if (!teamStages[key][index]) teamStages[key][index] = [];
-        teamStages[key][index].push(points);
-      });
-    });
-    var teamBox = document.querySelector('#teams');
-    if (!teamBox) return;
-    teamBox.querySelectorAll('.teamrow:not(.headrow)').forEach(function (row) {
-      var details = row.querySelector('.team-details, details');
-      var name = details && details.querySelector('summary') ? details.querySelector('summary').textContent : row.children[1] && row.children[1].textContent;
-      var values = teamStages[teamKey(name)] || [];
-      var total = values.reduce(function (sum, stage) {
-        return sum + (stage || []).sort(function (a, b) { return b - a; }).slice(0, 2).reduce(function (a, b) { return a + b; }, 0);
-      }, 0);
-      var points = row.querySelector('.points');
-      if (points) points.textContent = String(total);
-    });
+    return String(value || '')
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/and/g, '')
+      .replace(/[^a-z0-9]/g, '');
   }
 
-  var efkRow = Array.prototype.slice.call(document.querySelectorAll('#teams .teamrow:not(.headrow)')).find(function (row) {
-    var details = row.querySelector('.team-details, details');
-    var name = details && details.querySelector('summary') ? details.querySelector('summary').textContent : row.children[1] && row.children[1].textContent;
-    return teamKey(name) === teamKey('EFK');
-  });
-  if (efkRow) {
-    var list = efkRow.querySelector('ul');
-    if (list && !Array.prototype.some.call(list.children, function (li) { return li.textContent.indexOf('Adilson Mangiavaki') >= 0; })) {
-      var item = document.createElement('li');
-      item.innerHTML = '<span class="placeholder"></span>Adilson Mangiavaki';
-      list.appendChild(item);
-    }
-  }
-  refreshTeamScores();
   document.querySelectorAll('#classification .row:not(.headrow)').forEach(function (row) {
     var team = row.querySelector('.team');
     var stages = row.querySelectorAll('.stage');
@@ -391,16 +84,6 @@
   }
 
   var officialTimes = {
-    7: [
-      ['Marcelo Albuquerque', '01:04.625', '—'], ['Leonardo Rocha', '01:05.172', '00:26.972'],
-      ['Luiz Felipe', '01:06.792', '00:27.542'], ['Toninho Macedo', '01:04.852', '00:29.019'],
-      ['João Victor Barbosa', '01:04.972', '00:32.076'], ['Miro', '01:05.279', '00:36.964'],
-      ['André Afonso', '01:03.607', '00:51.764'], ['Alexandre Monnerat', '01:04.113', '00:54.283'],
-      ['Alessandro Soares', '01:08.341', '1 volta'], ['André Mitta', '01:06.640', '1 volta'],
-      ['Anderson Poubel', '01:07.742', '1 volta'], ['Ricardo Finim', '01:09.053', '1 volta'],
-      ['Henrique Arroz', '01:06.507', '2 voltas'], ['Bernardo Gaertner', '01:08.664', '2 voltas'],
-      ['Sardinha', '01:10.736', '2 voltas']
-    ],
     3: [
       ['Luiz Felipe', '00:46.511', '—'], ['Marcelo Albuquerque', '00:46.640', '00:07.209'],
       ['Miro', '00:46.833', '00:09.865'], ['Leonardo Rocha', '00:46.770', '00:12.142'],
@@ -431,8 +114,7 @@
       ['José Silva', '00:48.373', '1 volta'], ['André Rodrigues', '00:48.608', '+00:12.072'],
       ['Adilson Filho', '00:48.931', '+00:12.309'], ['Antonio Junior', '00:47.154', '+00:43.919'],
       ['Anderson Pires', '00:49.432', '+00:48.838']
-    ],
-    7: stage8OfficialTimes.map(function (item) { return item; })
+    ]
   };
 
   var resultBox = document.querySelector('#results');
@@ -478,21 +160,10 @@
     var match = button.textContent.match(/Etapa\s+(\d+)/i);
     if (!match) return;
     var stageIndex = parseInt(match[1], 10) - 1;
-    if (stageIndex > 7) return;
+    if (stageIndex > 6) return;
     buttonBox.querySelectorAll('.result-btn').forEach(function (item) {
       item.classList.toggle('active', item === button);
     });
-    if (stageIndex === 7) {
-      timeNote.hidden = false;
-      timeNote.textContent = 'Resultado oficial · 2º Festival de Kart · Kartódromo do Guará';
-      resultBox.innerHTML = '<div class="resultrow"><span>Posição</span><span>Piloto</span><span>Melhor volta</span><span>Diferença</span></div>' + stage8OfficialTimes.map(function (item, index) {
-        return '<div class="resultrow"><b>' + (index + 1) + 'º</b>' +
-          '<span class="result-pilot"><span class="placeholder"></span><strong>' + item[0] + '</strong></span>' +
-          '<span>' + item[1] + '</span><span>' + item[2] + '</span></div>';
-      }).join('');
-      return;
-    }
-    timeNote.textContent = 'Os tempos de volta desta etapa ainda não foram cadastrados.';
     renderResults(stageIndex);
   }
 
@@ -504,16 +175,84 @@
     selectStage(button);
   }, true);
 
-  var stage8Button = Array.prototype.find.call(buttonBox.querySelectorAll('.result-btn'), function (button) { return /Etapa\s*8/i.test(button.textContent); });
-  if (stage8Button) {
-    stage8Button.disabled = false;
-    stage8Button.textContent = 'Etapa 8 · Kartódromo do Guará';
-    stage8Button.addEventListener('click', function (event) {
-      event.preventDefault();
-      event.stopImmediatePropagation();
-      selectStage(stage8Button);
-    }, true);
-  }
   var activeButton = buttonBox.querySelector('.result-btn.active');
   selectStage(activeButton || buttonBox.querySelector('.result-btn'));
+
+  function installTeamStageBreakdown() {
+    if (!document.querySelector('#classification') || !document.querySelector('#teams')) return;
+    if (!document.getElementById('team-stage-breakdown-style')) {
+      var style = document.createElement('style');
+      style.id = 'team-stage-breakdown-style';
+      style.textContent = '.team-stage-breakdown{margin:12px 0 4px;padding:12px;border:1px solid rgba(78,143,205,.28);border-radius:10px;background:rgba(7,18,32,.55)}.team-stage-breakdown h4{margin:0 0 9px;color:#9fb4ce;font-size:11px;letter-spacing:.08em;text-transform:uppercase}.team-stage-line{display:grid;grid-template-columns:90px minmax(0,1fr) 58px;gap:8px;align-items:center;padding:7px 2px;border-top:1px solid rgba(78,143,205,.14);font-size:12px}.team-stage-line:first-of-type{border-top:0}.team-stage-line span:first-child{color:#aebbd0}.team-stage-line span:nth-child(2){color:#e5ebf4}.team-stage-line b{text-align:right;color:#ffd166;white-space:nowrap}@media(max-width:560px){.team-stage-line{grid-template-columns:67px minmax(0,1fr) 48px;gap:5px;font-size:11px}}';
+      document.head.appendChild(style);
+    }
+    function key(value) {
+      return String(value || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/and/g, '').replace(/[^a-z0-9]/g, '');
+    }
+    function refresh() {
+      var byTeam = {};
+      document.querySelectorAll('#classification .row:not(.headrow)').forEach(function (row) {
+        var nameNode = row.querySelector('.pilot strong');
+        var teamNode = row.querySelector('.team');
+        if (!nameNode || !teamNode) return;
+        var team = teamNode.textContent.trim();
+        if (!team || /^a definir$/i.test(team)) return;
+        var id = key(team);
+        if (!byTeam[id]) byTeam[id] = { name: team, stages: Array.from({ length: 11 }, function () { return []; }) };
+        Array.from(row.querySelectorAll('.stage')).slice(0, 11).forEach(function (cell, index) {
+          var match = cell.textContent.trim().match(/^(\d{1,2})/);
+          var place = match ? parseInt(match[1], 10) : 0;
+          if (place >= 1 && place <= 20) byTeam[id].stages[index].push({ name: nameNode.textContent.trim(), place: place, points: 21 - place });
+        });
+      });
+      document.querySelectorAll('#teams .teamrow:not(.headrow)').forEach(function (row) {
+        var details = row.querySelector('.team-details');
+        if (!details) return;
+        var summary = details.querySelector('summary');
+        var teamId = key(summary ? summary.textContent : '');
+        var team = byTeam[teamId];
+        if (!team) return;
+        var signature = team.stages.map(function (list) { return list.map(function (item) { return item.name + ':' + item.place; }).join(','); }).join('|');
+        var panel = details.querySelector('.team-stage-breakdown');
+        if (panel && panel.dataset.signature === signature) return;
+        if (!panel) {
+          panel = document.createElement('div');
+          panel.className = 'team-stage-breakdown';
+          details.appendChild(panel);
+        }
+        panel.dataset.signature = signature;
+        panel.replaceChildren();
+        var heading = document.createElement('h4');
+        heading.textContent = 'Pontos da equipe por etapa';
+        panel.appendChild(heading);
+        team.stages.forEach(function (results, index) {
+          var best = results.slice().sort(function (a, b) { return b.points - a.points || a.place - b.place; }).slice(0, 2);
+          var total = best.reduce(function (sum, item) { return sum + item.points; }, 0);
+          var line = document.createElement('div');
+          line.className = 'team-stage-line';
+          var stageLabel = document.createElement('span');
+          stageLabel.textContent = 'Etapa ' + (index + 1);
+          var contributors = document.createElement('span');
+          contributors.textContent = best.length ? best.map(function (item) { return item.name + ' (' + item.points + ')'; }).join(' + ') : 'Sem resultado pontuado';
+          var points = document.createElement('b');
+          points.textContent = total + ' pts';
+          line.append(stageLabel, contributors, points);
+          panel.appendChild(line);
+        });
+      });
+    }
+    var queued = false;
+    function schedule() {
+      if (queued) return;
+      queued = true;
+      requestAnimationFrame(function () { queued = false; refresh(); });
+    }
+    refresh();
+    var observer = new MutationObserver(schedule);
+    ['#classification', '#teams'].forEach(function (selector) {
+      var node = document.querySelector(selector);
+      if (node) observer.observe(node, { childList: true, subtree: true, characterData: true });
+    });
+  }
+  installTeamStageBreakdown();
 })();
