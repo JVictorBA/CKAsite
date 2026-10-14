@@ -3,8 +3,49 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 (() => {
   const config = window.CKA_SUPABASE_CONFIG;
   if (!config?.url || !config?.publishableKey) return;
-  const db = createClient(config.url, config.publishableKey);
+  const fetchWithTimeout = (input, init = {}) => {
+    const controller = new AbortController();
+    const originalSignal = init.signal;
+    const abortFromCaller = () => controller.abort();
+    if (originalSignal?.aborted) controller.abort();
+    else originalSignal?.addEventListener('abort', abortFromCaller, { once: true });
+    const timer = window.setTimeout(() => controller.abort(), 20000);
+    return fetch(input, { ...init, signal: controller.signal }).finally(() => {
+      window.clearTimeout(timer);
+      originalSignal?.removeEventListener('abort', abortFromCaller);
+    });
+  };
+  const db = createClient(config.url, config.publishableKey, { global: { fetch: fetchWithTimeout } });
   const publicState = { races: [], pilots: [], teams: [], stagePoints: [], standings: [], results: [], ready: false, error: null };
+  function showPublicSyncNotice(message) {
+    if(!publicState.ready)window.ckaMarkLiveDataFailed?.(`${message} A tabela antiga foi ocultada para não apresentar pontos incorretos.`);
+    let notice = document.getElementById('cka-public-sync-warning');
+    if (!notice) {
+      notice = document.createElement('div');
+      notice.id = 'cka-public-sync-warning';
+      notice.setAttribute('role', 'status');
+      notice.setAttribute('aria-live', 'polite');
+      const text = document.createElement('span');
+      const retry = document.createElement('button');
+      retry.type = 'button';
+      retry.textContent = 'Tentar sincronizar';
+      retry.onclick = async () => {
+        retry.disabled = true;
+        retry.textContent = 'Sincronizando…';
+        await refreshPublicData();
+        if (document.body.contains(retry)) {
+          retry.disabled = false;
+          retry.textContent = 'Tentar sincronizar';
+        }
+      };
+      notice.append(text, retry);
+      document.body.append(notice);
+    }
+    notice.querySelector('span').textContent = message;
+  }
+  function clearPublicSyncNotice() {
+    document.getElementById('cka-public-sync-warning')?.remove();
+  }
   const nav = document.querySelector('.tabs');
   const main = document.querySelector('main');
   if (!nav || !main) return;
@@ -12,6 +53,9 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
   const style = document.createElement('style');
   style.textContent = `
     :root{--cka-night:#070d16;--cka-navy:#0d1928;--cka-card:#111f31;--cka-line:#29415b;--cka-orange:#ff922e;--cka-gold:#ffd54a;--cka-green:#78d989;--cka-teal:#41c6bb;--cka-text:#f4f7fb;--cka-muted:#9eacc0}
+    @keyframes ckaPanelEnter{from{opacity:0;transform:translateY(9px)}to{opacity:1;transform:translateY(0)}}
+    main .panel.active{animation:ckaPanelEnter .28s cubic-bezier(.2,.7,.2,1) both}
+    @media(prefers-reduced-motion:reduce){main .panel.active{animation:none}}
     body{background:radial-gradient(ellipse at 78% 0%,rgba(49,91,115,.24),transparent 38%),radial-gradient(ellipse at 0% 45%,rgba(30,75,88,.15),transparent 40%),var(--cka-night);color:var(--cka-text);font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}
     .wrap{width:min(1480px,calc(100% - 40px))}
     .top{height:78px!important;min-height:78px!important;margin:12px auto 0;padding:0 20px!important;position:sticky;top:8px;z-index:80;display:flex;justify-content:space-between!important;gap:18px;border:1px solid rgba(91,143,187,.32)!important;border-radius:20px!important;background:rgba(8,18,31,.94)!important;box-shadow:0 14px 40px rgba(0,0,0,.34)!important;backdrop-filter:blur(18px)}
@@ -333,6 +377,52 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
     #resultados .result-buttons::-webkit-scrollbar{height:5px}
     #resultados .result-buttons::-webkit-scrollbar-track{background:#14181f}
     #resultados .result-buttons::-webkit-scrollbar-thumb{border:0;background:#d4af37}
+    #cka-public-sync-warning{position:fixed;z-index:1200;top:12px;left:50%;transform:translateX(-50%);width:min(620px,calc(100% - 24px));display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 14px;border:1px solid rgba(212,175,55,.45);border-radius:8px;background:#17191d;color:#e8e2d2;font-size:12px;line-height:1.4;box-shadow:0 8px 24px rgba(0,0,0,.32)}
+    #cka-public-sync-warning button{flex:0 0 auto;padding:7px 10px;border:1px solid rgba(212,175,55,.55);border-radius:6px;background:transparent;color:#f1d98a;font:inherit;font-weight:700;cursor:pointer}
+    #cka-public-sync-warning button:disabled{opacity:.65;cursor:wait}
+
+    /* Mobile: keep the standings and race results inside the viewport. */
+    @media(max-width:640px){
+      .wrap{width:calc(100% - 20px)!important}
+      #classificacao .scroll{position:static!important;max-height:none!important;overflow:visible!important;border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important}
+      #classification.table{width:100%!important;min-width:0!important}
+      #classification .row.headrow,#classification .row:not(.headrow){display:grid!important;width:100%!important;min-width:0!important;grid-template-columns:38px minmax(0,1fr) 64px!important;gap:8px!important;align-items:center!important}
+      #classification .row.headrow{min-height:40px!important;padding:8px 10px!important;background:rgba(255,255,255,.035)!important}
+      #classification .row:not(.headrow){min-height:62px!important;padding:9px 10px!important;margin:0!important;border:0!important;border-bottom:1px solid rgba(255,255,255,.08)!important;border-radius:0!important;overflow:hidden!important;background:transparent!important}
+      #classification .row.headrow>:nth-child(3),#classification .row:not(.headrow)>.team,#classification .row:not(.headrow)>.stage,#classification .row:not(.headrow)>:nth-child(n+16){display:none!important}
+      #classification .row.headrow>:nth-child(n+5){display:none!important}
+      #classification .row.headrow>:nth-child(4),#classification .row:not(.headrow)>:nth-child(4){display:block!important}
+      #classification .row.headrow>*{min-width:0!important;padding:0!important;font-size:9px!important;text-align:left!important;white-space:nowrap!important}
+      #classification .row:not(.headrow)>*{min-width:0!important;padding:0!important;text-align:left!important;white-space:normal!important;overflow-wrap:anywhere;font-size:13px!important}
+      #classification .row:not(.headrow)>.pos{position:static!important;padding-left:0!important;font-size:14px!important;font-weight:800!important}
+      #classification .row:not(.headrow)>.pilot{position:static!important;display:flex!important;min-width:0!important;gap:9px!important;white-space:normal!important}
+      #classification .row:not(.headrow)>.pilot strong{min-width:0!important;overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important;font-size:13px!important}
+      #classification .row:not(.headrow)>.pilot small{display:none!important}
+      #classification .row:not(.headrow)>.pilot .avatar,#classification .row:not(.headrow)>.pilot .placeholder{width:38px!important;height:38px!important;min-width:38px!important;flex:0 0 38px!important}
+      #classification .row:not(.headrow)>.points{font-size:16px!important;text-align:right!important}
+      #classification .row.headrow>:first-child{grid-column:1!important}
+      #classification .row.headrow>:nth-child(2){grid-column:2!important}
+      #classification .row.headrow>:nth-child(4){grid-column:3!important;text-align:right!important}
+      #resultados .result-buttons{gap:16px!important;padding:4px 2px 8px!important;scroll-snap-type:x proximity!important;touch-action:pan-x!important;-webkit-overflow-scrolling:touch!important}
+      #resultados .result-buttons .result-btn{max-width:78vw!important;white-space:nowrap!important;scroll-snap-align:center!important}
+      #resultados .results{width:100%!important;min-width:0!important;overflow:visible!important;border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important}
+      #resultados .resultrow{display:grid!important;width:100%!important;min-width:0!important;box-sizing:border-box!important;grid-template-columns:34px minmax(0,1fr) 70px 62px!important;grid-template-rows:auto!important;gap:4px!important;align-items:center!important;padding:8px 4px!important;margin:0!important;border:0!important;border-bottom:1px solid rgba(255,255,255,.08)!important;border-radius:0!important;overflow:hidden!important}
+      #resultados .resultrow:first-child{position:static!important}
+      #resultados .resultrow:first-child>span{min-width:0!important;padding:0!important;white-space:normal!important;text-align:center!important;font-size:8px!important;line-height:1.15!important;overflow-wrap:anywhere}
+      #resultados .resultrow:not(:first-child)>b{grid-column:auto!important;grid-row:auto!important;text-align:left!important;font-size:12px!important}
+      #resultados .resultrow:not(:first-child)>.result-pilot{grid-column:auto!important;grid-row:auto!important;display:flex!important;min-width:0!important;gap:5px!important;white-space:nowrap!important;overflow:hidden!important;font-size:10px!important}
+      #resultados .resultrow:not(:first-child)>.result-pilot strong{display:block!important;min-width:0!important;overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important}
+      #resultados .resultrow:not(:first-child)>:nth-child(3),#resultados .resultrow:not(:first-child)>:nth-child(4){grid-column:auto!important;grid-row:auto!important;min-width:0!important;text-align:center!important;font-size:9px!important;white-space:nowrap!important}
+      #resultados .resultrow:not(:first-child)>[data-label]::before{display:none!important}
+      #resultados .resultrow .result-pilot img,#resultados .resultrow .result-pilot .placeholder{display:block!important;width:26px!important;height:26px!important;min-width:26px!important;flex:0 0 26px!important}
+      #teams .teams{width:100%!important;min-width:0!important}
+      #teams .teamrow:not(.headrow){grid-template-columns:42px minmax(0,1fr) 68px!important;gap:6px!important;padding:12px 8px!important}
+      #teams .teamrow:not(.headrow)>.team-details{grid-column:2!important;grid-row:1!important;min-width:0!important}
+      #teams .teamrow:not(.headrow)>strong.points,#teams .teamrow:not(.headrow)>:nth-child(3){display:block!important;grid-column:3!important;grid-row:1!important;text-align:right!important;font-size:16px!important}
+      #teams .teamrow:not(.headrow)>:nth-child(4){display:none!important}
+      #teams .teamrow.headrow{grid-template-columns:42px minmax(0,1fr) 68px!important;padding:10px 8px!important}
+      #teams .teamrow.headrow>:nth-child(4){display:none!important}
+    }
   `;
   const hero=document.querySelector('.hero');
   const brandLabel=document.querySelector('.top .brand span');
@@ -419,6 +509,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
   const adminBox = makePanel('cka-admin', 'Administração CKA', 'Acesso restrito ao administrador.');
   makeTab('cka-calendario', 'Calendário'); makeTab('cka-fotos', 'Fotos'); makeTab('cka-videos', 'Vídeos'); makeTab('cka-admin', 'Admin');
   const state = { admin: false, user: null, races: [], pilots: [], teams: [], initialized: false, editingPilotId: null };
+  let adminDataPromise = null;
   const html = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const replaceHTML = (root, markup) => { if (root && root.innerHTML !== markup) root.innerHTML = markup; };
   const photoUrl = pilot => {
@@ -431,6 +522,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
   };
   const lapText = ms => ms == null ? '—' : `${String(Math.floor(ms / 60000)).padStart(2,'0')}:${String(Math.floor(ms / 1000) % 60).padStart(2,'0')}.${String(ms % 1000).padStart(3,'0')}`;
   async function refreshPublicData() {
+    try {
     const [seasonResult, raceResult, pointsResult, standingsResult, pilotsResult, teamsResult] = await Promise.all([
       db.from('cka_seasons').select('id,season_year').eq('is_active', true).maybeSingle(),
       db.from('cka_races').select('id,season_id,round_number,race_date,start_time,venue,location,status,is_published,results_published').eq('is_published', true).order('round_number'),
@@ -440,15 +532,15 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
       db.from('cka_teams').select('id,season_id,name,is_active').eq('is_active', true).order('name')
     ]);
     const failed = [seasonResult, raceResult, pointsResult, standingsResult, pilotsResult, teamsResult].find(result => result.error);
-    if (failed) { publicState.error = failed.error; console.warn('CKA: falha ao sincronizar os dados públicos.', failed.error); return false; }
+    if (failed) { publicState.error = failed.error; console.warn('CKA: falha ao sincronizar os dados públicos.', failed.error); showPublicSyncNotice(`Falha ao sincronizar os dados do campeonato: ${failed.error.message||'erro de conexão'}. Os dados exibidos podem estar desatualizados.`); return false; }
     const activeSeasonId=seasonResult.data?.id;
-    if(!activeSeasonId){publicState.error=new Error('Não há temporada ativa configurada.');return false;}
+    if(!activeSeasonId){publicState.error=new Error('Não há temporada ativa configurada.');showPublicSyncNotice('Nenhuma temporada ativa está configurada no Supabase.');return false;}
     const races = (raceResult.data || []).filter(race=>race.season_id===activeSeasonId);
     const eligibleIds = races.filter(race => race.status === 'completed' && race.results_published).map(race => race.id);
     let results = [];
     if (eligibleIds.length) {
       const result = await db.from('cka_race_results').select('race_id,pilot_id,team_id,status,finish_position,best_lap_ms,gap_display').in('race_id', eligibleIds).order('finish_position');
-      if (result.error) { publicState.error = result.error; console.warn('CKA: falha ao carregar os tempos oficiais.', result.error); return false; }
+      if (result.error) { publicState.error = result.error; console.warn('CKA: falha ao carregar os tempos oficiais.', result.error); showPublicSyncNotice(`Não foi possível carregar os resultados publicados: ${result.error.message||'erro de conexão'}.`); return false; }
       results = result.data || [];
     }
     publicState.races = races;
@@ -464,8 +556,16 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
     renderLivePilots();
     renderLiveResults();
     syncLiveSeasonFacts();
+    window.ckaMarkLiveDataReady?.();
+    clearPublicSyncNotice();
     window.dispatchEvent(new CustomEvent('cka:public-data-updated'));
     return true;
+    } catch (error) {
+      publicState.error = error;
+      console.warn('CKA: erro ou timeout ao sincronizar os dados públicos.', error);
+      showPublicSyncNotice(`A sincronização não foi concluída: ${error.message||'verifique sua conexão com o Supabase'}.`);
+      return false;
+    }
   }
   function renderLiveStandings() {
     const root = document.querySelector('#classification'); if (!root) return;
@@ -475,10 +575,14 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
       const stats = publicState.standings.find(row => row.pilot_id === pilot.id) || {};
       const entries = publicState.stagePoints.filter(row => row.pilot_id === pilot.id && raceById.has(row.race_id));
       const byRound = new Map(entries.map(row => [row.round_number, row]));
-      const discarded = new Set((stats.discarded_rounds || []).map(Number));
+      const discardCount = Math.min(2, Math.max(0, races.length - 1));
+      const scoreOf = row => (Number(row.race_points)||0) + (Number(row.bonus_points)||0) - (Number(row.penalty_points)||0);
+      const discardedEntries = [...entries].sort((a,b)=>scoreOf(a)-scoreOf(b)||Number(a.round_number)-Number(b.round_number)).slice(0,discardCount);
+      const discarded = new Set(discardedEntries.map(row=>Number(row.round_number)));
+      const finalPoints = entries.reduce((sum,row)=>sum+scoreOf(row),0)-discardedEntries.reduce((sum,row)=>sum+scoreOf(row),0);
       const team = publicState.teams.find(item => item.id === pilot.default_team_id);
-      const podiums = entries.filter(row => row.result_status === 'finished' && Number(row.finish_position) <= 3).length;
-      return { ...pilot, stats, teamName: team?.name || 'Sem equipe', byRound, podiums, wins: Number(stats.wins) || 0, finalPoints: Number(stats.final_points) || 0 };
+      const podiums = entries.filter(row => row.result_status === 'finished' && Number(row.finish_position) <= 5).length;
+      return { ...pilot, stats, teamName: team?.name || 'Sem equipe', byRound, discarded, podiums, wins: Number(stats.wins) || 0, finalPoints };
     }).sort((a,b) => b.finalPoints - a.finalPoints || a.pilot_number - b.pilot_number);
     const heading = ['Pos.','Piloto','Equipe','Pontos',...Array.from({length:11},(_,i)=>`Etapa ${i+1}`),'Bônus','Saldo','Descarte 1','Descarte 2'];
     const header = `<div class="row headrow">${heading.map(label=>`<span>${html(label)}</span>`).join('')}</div>`;
@@ -491,7 +595,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
         return `<span class="stage ${klass}" data-label="Etapa ${round}"><span>${pos}</span>${race?`<small>${points} pts</small>`:''}</span>`;
       }).join('');
       const bonus=Number(pilot.stats.bonus_points)||0, penalty=Number(pilot.stats.penalty_points)||0;
-      const discardValues=(pilot.stats.discarded_rounds||[]).map(Number).map(round=>{
+      const discardValues=[...pilot.discarded].map(Number).map(round=>{
         const entry=pilot.byRound.get(round);return entry ? (Number(entry.race_points)+Number(entry.bonus_points||0)-Number(entry.penalty_points||0)) : 0;
       }).sort((a,b)=>a-b);
       const row=`<div class="row" data-pilot-id="${html(pilot.id)}"><b class="pos" data-label="Pos.">${index+1}º</b><div class="pilot" data-label="Piloto">${avatarMarkup(pilot)}<span><strong>${html(pilot.display_name)}</strong><small>${index===0?'Líder do campeonato':''}</small></span></div><span class="team" data-label="Equipe">${html(pilot.teamName)}</span><b class="points" data-label="Pontos">${pilot.finalPoints}</b>${stages}<span class="bonus" data-label="Bônus">${bonus}</span><span class="points" data-label="Saldo">${bonus-penalty}</span><span class="discard" data-label="Descarte 1">${discardValues[0] ?? '—'}</span><span class="discard" data-label="Descarte 2">${discardValues[1] ?? '—'}</span></div>`;
@@ -528,10 +632,16 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
   }
   function renderLivePilots() {
     const root=document.querySelector('#pilotcards');if(!root)return;
+    const races=publicState.races.filter(r=>r.status==='completed'&&r.results_published);
+    const raceIds=new Set(races.map(r=>r.id));
     const ordered=publicState.pilots.map(pilot=>{
       const stats=publicState.standings.find(row=>row.pilot_id===pilot.id)||{};
-      const points=publicState.stagePoints.filter(row=>row.pilot_id===pilot.id);
-      return {...pilot,stats,points:Math.max(0,Number(stats.final_points)||0),wins:Number(stats.wins)||0,podiums:points.filter(row=>row.result_status==='finished'&&Number(row.finish_position)<=3).length,starts:Number(stats.starts)||0};
+      const points=publicState.stagePoints.filter(row=>row.pilot_id===pilot.id&&raceIds.has(row.race_id));
+      const scoreOf=row=>(Number(row.race_points)||0)+(Number(row.bonus_points)||0)-(Number(row.penalty_points)||0);
+      const discardCount=Math.min(2,Math.max(0,races.length-1));
+      const discarded=[...points].sort((a,b)=>scoreOf(a)-scoreOf(b)||Number(a.round_number)-Number(b.round_number)).slice(0,discardCount);
+      const total=points.reduce((sum,row)=>sum+scoreOf(row),0)-discarded.reduce((sum,row)=>sum+scoreOf(row),0);
+      return {...pilot,stats,points:total,wins:Number(stats.wins)||0,podiums:points.filter(row=>row.result_status==='finished'&&Number(row.finish_position)<=5).length,starts:Number(stats.starts)||0};
     }).sort((a,b)=>b.points-a.points||a.pilot_number-b.pilot_number);
     replaceHTML(root,`<div class="pilot-grid">${ordered.map(p=>`<article class="pilot-card" data-pilot-id="${html(p.id)}">${avatarMarkup(p)}<h3>${html(p.display_name)}</h3><span class="team">${html(publicState.teams.find(t=>t.id===p.default_team_id)?.name||'Sem equipe')}</span><div class="pilot-detail-stats"><div><b>${p.points}</b><span>Pontos</span></div><div><b>${p.wins}</b><span>Vitórias</span></div><div><b>${p.podiums}</b><span>Pódios</span></div><div><b>${p.starts}</b><span>Etapas</span></div></div></article>`).join('')}</div>`);
   }
@@ -592,15 +702,21 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
   function field(label,name,type='text',opts={}) { return `<label>${label}${opts.help?`<small class="cka-muted">${opts.help}</small>`:''}${type==='select'?`<select name="${name}" ${opts.required?'required':''}>${opts.options||''}</select>`:`<input name="${name}" type="${type}" ${opts.required?'required':''} ${opts.step?`step="${opts.step}"`:''} ${opts.accept?`accept="${opts.accept}"`:''} ${opts.min?`min="${opts.min}"`:''} ${opts.placeholder?`placeholder="${opts.placeholder}"`:''}>`}</label>`; }
   function options(items, label, val='id') { return (items||[]).map(x=>`<option value="${html(x[val])}">${html(label(x))}</option>`).join(''); }
   async function initAdminData() {
-    const [r,p,t]=await Promise.all([
-      db.from('cka_races').select('id,season_id,round_number,race_date,start_time,venue,location,status,results_published').order('round_number'),
-      db.from('cka_pilots').select('id,season_id,pilot_number,full_name,display_name,default_team_id,photo_path,is_active').order('pilot_number'),
-      db.from('cka_teams').select('id,name').eq('is_active',true).order('name')
-    ]);
-    if(r.error||p.error||t.error) throw r.error||p.error||t.error;
-    state.races=r.data;state.pilots=p.data;state.teams=t.data;state.initialized=true;
+    if(state.initialized)return;
+    if(adminDataPromise)return adminDataPromise;
+    adminDataPromise=(async()=>{
+      const [r,p,t]=await Promise.all([
+        db.from('cka_races').select('id,season_id,round_number,race_date,start_time,venue,location,status,results_published').order('round_number'),
+        db.from('cka_pilots').select('id,season_id,pilot_number,full_name,display_name,default_team_id,photo_path,is_active').order('pilot_number'),
+        db.from('cka_teams').select('id,name').eq('is_active',true).order('name')
+      ]);
+      if(r.error||p.error||t.error)throw r.error||p.error||t.error;
+      state.races=r.data;state.pilots=p.data;state.teams=t.data;state.initialized=true;
+    })();
+    try{await adminDataPromise;}finally{adminDataPromise=null;}
   }
   async function renderAdmin() {
+    if(state.admin&&adminBox.querySelector('.cka-box'))return;
     const {data:{session}}=await db.auth.getSession(); state.user=session?.user||null;
     if(!state.user){loginView();return;}
     const {data:isAdmin,error}=await db.rpc('cka_is_admin');
@@ -621,7 +737,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
   function renderEditor(which) {
     const host=adminBox.querySelector('#cka-editor'); if(!host)return;
     const raceOpts=options(state.races,r=>`Etapa ${r.round_number} · ${r.venue}`), pilotOpts=options(state.pilots.filter(p=>p.is_active),p=>`${p.pilot_number} · ${p.display_name}`), teamOpts='<option value="">Sem equipe / não definida</option>'+options(state.teams,t=>t.name);
-    if(which==='race') host.innerHTML=`<h3>Lançamento de resultados por etapa</h3><p class="cka-muted">Escolha a etapa e adicione os pilotos. A camisa CKA aplica +5 pontos; cada advertência desconta automaticamente 3 pontos, inclusive no cálculo dos descartes.</p><form id="cka-result"><div class="cka-result-toolbar"><label>Etapa<select name="race_id" required><option value="">Selecione uma etapa</option>${raceOpts}</select></label><label>Piloto para adicionar<select name="add_pilot_id"><option value="">Selecione um piloto</option>${pilotOpts}</select></label><button class="cka-action" type="button" data-add-pilot>Adicionar piloto</button></div><div class="cka-result-scroll"><table class="cka-result-table"><thead><tr><th>Piloto</th><th>Equipe na etapa</th><th>Situação</th><th>Posição</th><th>Melhor volta</th><th>Diferença para o 1º</th><th>Camisa CKA (+5)</th><th>Advertência (−3)</th><th></th></tr></thead><tbody data-result-rows><tr><td class="cka-result-empty" colspan="9">Selecione uma etapa para carregar os resultados já cadastrados.</td></tr></tbody></table></div><div class="cka-result-actions"><label style="display:flex;align-items:center;gap:8px;color:#b7c4d8"><input name="publish" type="checkbox"> Publicar etapa após salvar</label><button class="cka-action primary" type="submit">Salvar resultados da etapa</button></div></form>`;
+    if(which==='race') host.innerHTML=`<h3>Lançamento de resultados por etapa</h3><p class="cka-muted">Digite apenas números nos campos de melhor volta e diferença; o formato é aplicado automaticamente ao sair do campo. O rascunho fica salvo neste navegador enquanto você preenche. A camisa CKA aplica +5 pontos; cada advertência desconta automaticamente 3 pontos, inclusive no cálculo dos descartes.</p><form id="cka-result"><div class="cka-result-toolbar"><label>Etapa<select name="race_id" required><option value="">Selecione uma etapa</option>${raceOpts}</select></label><label>Piloto para adicionar<select name="add_pilot_id"><option value="">Selecione um piloto</option>${pilotOpts}</select></label><button class="cka-action" type="button" data-add-pilot>Adicionar piloto</button></div><div class="cka-result-scroll"><table class="cka-result-table"><thead><tr><th>Piloto</th><th>Equipe na etapa</th><th>Situação</th><th>Posição</th><th>Melhor volta</th><th>Diferença para o 1º</th><th>Camisa CKA (+5)</th><th>Advertência (−3)</th><th></th></tr></thead><tbody data-result-rows><tr><td class="cka-result-empty" colspan="9">Selecione uma etapa para carregar os resultados já cadastrados.</td></tr></tbody></table></div><div class="cka-result-actions"><label style="display:flex;align-items:center;gap:8px;color:#b7c4d8"><input name="publish" type="checkbox"> Publicar etapa após salvar — atualiza resultados e pontuação no site</label><button class="cka-action primary" type="submit">Salvar resultados da etapa</button></div></form>`;
     if(which==='schedule') host.innerHTML=`<h3>Editar etapa</h3><form class="cka-form" id="cka-schedule">${field('Etapa','race_id','select',{required:true,options:raceOpts})}${field('Data','race_date','date',{required:true})}${field('Horário','start_time','time',{required:true})}${field('Kartódromo','venue','text',{required:true})}${field('Localidade','location','text',{required:true})}<button class="cka-action primary">Salvar etapa</button></form>`;
     if(which==='team') host.innerHTML=`<h3>Vincular piloto a uma equipe padrão</h3><form class="cka-form" id="cka-team">${field('Piloto','pilot_id','select',{required:true,options:pilotOpts})}${field('Equipe','team_id','select',{options:teamOpts})}<button class="cka-action primary">Salvar equipe</button></form>`;
     if(which==='pilots') {
@@ -639,13 +755,28 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
       const rows=form.querySelector('[data-result-rows]'),addPilot=form.elements.add_pilot_id,added=new Set();
       const teamOptions='<option value="">Sem equipe / não definida</option>'+options(state.teams,t=>t.name);
       const pilotById=id=>state.pilots.find(p=>p.id===id);
+      const draftKey=raceId=>`cka:result-draft:${raceId}`;
+      const readDraft=raceId=>{
+        const key=draftKey(raceId);
+        try{const value=localStorage.getItem(key);if(value)return JSON.parse(value);}catch(error){console.warn('CKA: não foi possível ler o rascunho persistente.',error);}
+        try{const value=sessionStorage.getItem(key);return value?JSON.parse(value):null;}catch{try{sessionStorage.removeItem(key);}catch{}return null;}
+      };
+      const clearDraft=raceId=>{try{localStorage.removeItem(draftKey(raceId));}catch{}try{sessionStorage.removeItem(draftKey(raceId));}catch{}};
+      const saveDraft=()=>{
+        if(!select.value)return;
+        const draft={publish:form.elements.publish.checked,rows:[...rows.querySelectorAll('tr[data-pilot-id]')].map(tr=>({pilotId:tr.dataset.pilotId,team:tr.querySelector('[name="team_id"]').value,status:tr.querySelector('[name="status"]').value,position:tr.querySelector('[name="finish_position"]').value,bestLap:tr.querySelector('[name="best_lap"]').value,gap:tr.querySelector('[name="gap_display"]').value,shirt:tr.querySelector('[name="cka_shirt"]').checked,warning:tr.querySelector('[name="warning"]').checked}))};
+        const key=draftKey(select.value),value=JSON.stringify(draft);
+        try{localStorage.setItem(key,value);}catch(error){try{sessionStorage.setItem(key,value);}catch{console.warn('CKA: não foi possível guardar o rascunho local.',error);}}
+      };
+      form.addEventListener('input',event=>{if(!['race_id','add_pilot_id'].includes(event.target.name))saveDraft();});
+      form.addEventListener('change',event=>{if(!['race_id','add_pilot_id'].includes(event.target.name))saveDraft();});
       const rowMarkup=(pilotId,data={},adjustments=[])=>{
         const pilot=pilotById(pilotId);if(!pilot||added.has(pilotId))return;
         added.add(pilotId);
         const shirt=adjustments.find(a=>a.kind==='bonus'&&a.reason_code==='cka_shirt');
         const warning=adjustments.find(a=>a.kind==='penalty'&&a.reason_code==='warning');
         const lap=data.best_lap_ms?`${String(Math.floor(data.best_lap_ms/60000)).padStart(2,'0')}:${String(Math.floor(data.best_lap_ms/1000)%60).padStart(2,'0')}.${String(data.best_lap_ms%1000).padStart(3,'0')}`:'';
-        rows.insertAdjacentHTML('beforeend',`<tr data-pilot-id="${html(pilotId)}"><td class="cka-pilot-cell">${html(pilot.display_name)}</td><td><select name="team_id">${teamOptions}</select></td><td><select name="status"><option value="finished">Concluiu</option><option value="dnf">Abandonou</option><option value="dns">Não largou</option><option value="absent">Ausente</option><option value="disqualified">Desclassificado</option></select></td><td><input name="finish_position" type="number" min="1" placeholder="—"></td><td><input name="best_lap" type="text" placeholder="00:47.532"></td><td><input name="gap_display" type="text" placeholder="+00:03.182 / 1 volta"></td><td><input class="cka-check" name="cka_shirt" type="checkbox" aria-label="Camisa CKA, mais 5 pontos"></td><td><input class="cka-check" name="warning" type="checkbox" aria-label="Recebeu advertência, menos 3 pontos"></td><td><button class="cka-action" type="button" data-remove-pilot>Remover</button></td></tr>`);
+        rows.insertAdjacentHTML('beforeend',`<tr data-pilot-id="${html(pilotId)}"><td class="cka-pilot-cell">${html(pilot.display_name)}</td><td><select name="team_id">${teamOptions}</select></td><td><select name="status"><option value="finished">Concluiu</option><option value="dnf">Abandonou</option><option value="dns">Não largou</option><option value="absent">Ausente</option><option value="disqualified">Desclassificado</option></select></td><td><input name="finish_position" type="number" min="1" placeholder="—"></td><td><input name="best_lap" type="text" inputmode="numeric" autocomplete="off" placeholder="Só números: 0103607"></td><td><input name="gap_display" type="text" inputmode="numeric" autocomplete="off" placeholder="Só números: 6981 ou 1 volta"></td><td><input class="cka-check" name="cka_shirt" type="checkbox" aria-label="Camisa CKA, mais 5 pontos"></td><td><input class="cka-check" name="warning" type="checkbox" aria-label="Recebeu advertência, menos 3 pontos"></td><td><button class="cka-action" type="button" data-remove-pilot>Remover</button></td></tr>`);
         const tr=rows.querySelector(`tr[data-pilot-id="${CSS.escape(pilotId)}"]`);
         tr.querySelector('[name="team_id"]').value=data.team_id||pilot.default_team_id||'';
         tr.querySelector('[name="status"]').value=data.status||'finished';
@@ -654,38 +785,81 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
         tr.querySelector('[name="gap_display"]').value=data.gap_display||'';
         tr.querySelector('[name="cka_shirt"]').checked=!!shirt;
         tr.querySelector('[name="warning"]').checked=!!warning;
-        tr.querySelector('[data-remove-pilot]').onclick=()=>{added.delete(pilotId);tr.remove();};
+        tr.querySelector('[name="best_lap"]').addEventListener('input',event=>{event.currentTarget.value=event.currentTarget.value.replace(/[^\d:.+]/g,'');saveDraft();});
+        tr.querySelector('[name="gap_display"]').addEventListener('input',saveDraft);
+        const normalizeLapInput=event=>{const input=event.currentTarget,ms=parseLap(input.value);if(ms!=null)input.value=formatLap(ms);saveDraft();};
+        const normalizeGapInput=event=>{const input=event.currentTarget,gap=parseGap(input.value);if(gap?.gap_ms!=null)input.value=gap.gap_display;saveDraft();};
+        tr.querySelector('[name="best_lap"]').addEventListener('blur',normalizeLapInput);
+        tr.querySelector('[name="best_lap"]').addEventListener('change',normalizeLapInput);
+        tr.querySelector('[name="gap_display"]').addEventListener('blur',normalizeGapInput);
+        tr.querySelector('[name="gap_display"]').addEventListener('change',normalizeGapInput);
+        tr.querySelector('[data-remove-pilot]').onclick=()=>{added.delete(pilotId);tr.remove();saveDraft();};
       };
-      form.querySelector('[data-add-pilot]').onclick=()=>{const id=addPilot.value;if(!id)return status(adminBox,'Escolha um piloto para adicionar.',true);if(added.has(id))return status(adminBox,'Esse piloto já está na lista desta etapa.',true);rowMarkup(id);addPilot.value='';};
+      form.querySelector('[data-add-pilot]').onclick=()=>{const id=addPilot.value;if(!id)return status(adminBox,'Escolha um piloto para adicionar.',true);if(added.has(id))return status(adminBox,'Esse piloto já está na lista desta etapa.',true);rowMarkup(id);addPilot.value='';saveDraft();};
       select.onchange=async()=>{
         added.clear();rows.innerHTML='<tr><td class="cka-result-empty" colspan="9">Carregando resultados da etapa…</td></tr>';
         if(!select.value){rows.innerHTML='<tr><td class="cka-result-empty" colspan="9">Selecione uma etapa para carregar os resultados já cadastrados.</td></tr>';return;}
-        const {data:results,error}=await db.from('cka_race_results').select('pilot_id,team_id,status,finish_position,best_lap_ms,gap_display').eq('race_id',select.value);
-        if(error){rows.innerHTML='';return status(adminBox,error.message,true);}
-        const ids=(results||[]).map(r=>r.pilot_id);let adjustments=[];
-        if(ids.length){const result=await db.from('cka_race_adjustments').select('pilot_id,kind,reason_code,points').eq('race_id',select.value).in('pilot_id',ids);if(result.error){rows.innerHTML='';return status(adminBox,result.error.message,true);}adjustments=result.data||[];}
+        const raceId=select.value;
+        const [result,adjustmentResult]=await Promise.all([
+          db.from('cka_race_results').select('pilot_id,team_id,status,finish_position,best_lap_ms,gap_display').eq('race_id',raceId),
+          db.from('cka_race_adjustments').select('pilot_id,kind,reason_code,points').eq('race_id',raceId)
+        ]);
+        if(result.error||adjustmentResult.error){rows.innerHTML='';return status(adminBox,(result.error||adjustmentResult.error).message,true);}
+        if(select.value!==raceId)return;
+      const results=result.data||[],adjustments=adjustmentResult.data||[];
         rows.innerHTML='';
-        for(const r of results||[])rowMarkup(r.pilot_id,r,adjustments.filter(a=>a.pilot_id===r.pilot_id));
+        for(const r of results)rowMarkup(r.pilot_id,r,adjustments.filter(a=>a.pilot_id===r.pilot_id));
+        let draft=null;
+      let recoveredDraft=false;
+        draft=readDraft(raceId);
+        if(draft&&Array.isArray(draft.rows)){
+        recoveredDraft=true;
+          for(const item of draft.rows){
+            if(!added.has(item.pilotId))rowMarkup(item.pilotId);
+            const tr=rows.querySelector(`tr[data-pilot-id="${CSS.escape(item.pilotId)}"]`);if(!tr)continue;
+            tr.querySelector('[name="team_id"]').value=item.team||'';tr.querySelector('[name="status"]').value=item.status||'finished';
+            tr.querySelector('[name="finish_position"]').value=item.position||'';tr.querySelector('[name="best_lap"]').value=item.bestLap||'';tr.querySelector('[name="gap_display"]').value=item.gap||'';
+            tr.querySelector('[name="cka_shirt"]').checked=!!item.shirt;tr.querySelector('[name="warning"]').checked=!!item.warning;
+          }
+          form.elements.publish.checked=!!draft.publish;
+          status(adminBox,'Rascunho recuperado neste navegador. Confira os dados antes de salvar.');
+        }
         if(!rows.children.length)rows.innerHTML='<tr><td class="cka-result-empty" colspan="9">Nenhum resultado cadastrado nesta etapa. Adicione os pilotos para começar.</td></tr>';
-        status(adminBox,'Resultados carregados. Edite linhas existentes ou adicione pilotos.');
+        if(!recoveredDraft){
+          const selectedRace=state.races.find(item=>item.id===raceId);
+          status(adminBox,selectedRace?.results_published?'Etapa publicada. Ao salvar, as alterações serão recalculadas na classificação.':'Etapa em rascunho: para exibir os resultados e atualizar os pontos, marque “Publicar etapa após salvar”.');
+        }
       };
       const parseLap=value=>{
-        const match=String(value||'').trim().match(/^(?:(\d+):)?(\d{1,2})(?:\.(\d{1,3}))?$/);
+        const text=String(value||'').trim();
+        if(/^\d{1,9}$/.test(text)){
+          if(text.length<=3)return Number(text)||null;
+          const digits=text.padStart(5,'0'),millis=Number(digits.slice(-3)),seconds=Number(digits.slice(-5,-3)),minutes=Number(digits.slice(0,-5)||0);
+          return seconds<60?(minutes*60+seconds)*1000+millis:null;
+        }
+        const match=text.match(/^(?:(\d+):)?(\d{1,2})(?:\.(\d{1,3}))?$/);
         if(!match)return null;
         const minutes=Number(match[1]||0),seconds=Number(match[2]),millis=Number((match[3]||'').padEnd(3,'0'));
-        if(seconds>=60&&match[1])return null;
-        return (minutes*60+seconds)*1000+millis;
+        if(seconds>=60)return null;
+        const total=(minutes*60+seconds)*1000+millis;
+        return total||null;
       };
+      const formatLap=ms=>`${String(Math.floor(ms/60000)).padStart(2,'0')}:${String(Math.floor(ms/1000)%60).padStart(2,'0')}.${String(ms%1000).padStart(3,'0')}`;
       const parseGap=value=>{
         const text=String(value||'').trim();
         if(!text||text==='—'||text==='-')return {gap_display:text||null,gap_ms:null,gap_laps:null};
         const lapMatch=text.match(/^(\d+)\s+volta(?:s)?$/i);
         if(lapMatch)return {gap_display:text,gap_ms:null,gap_laps:Number(lapMatch[1])||null};
+        if(/^\+?\d{1,9}$/.test(text)){
+          const ms=parseLap(text.replace(/^\+/,''));
+          if(!ms)return null;
+          return {gap_display:`+${formatLap(ms)}`,gap_ms:ms,gap_laps:null};
+        }
         const timeMatch=text.match(/^\+?(?:(\d+):)?(\d{1,2})\.(\d{1,3})$/);
         if(!timeMatch)return null;
         const minutes=Number(timeMatch[1]||0),seconds=Number(timeMatch[2]),millis=Number(timeMatch[3].padEnd(3,'0'));
-        if(seconds>=60&&timeMatch[1])return null;
-        return {gap_display:text,gap_ms:(minutes*60+seconds)*1000+millis,gap_laps:null};
+        if(seconds>=60)return null;
+        return {gap_display:`+${formatLap((minutes*60+seconds)*1000+millis)}`,gap_ms:(minutes*60+seconds)*1000+millis,gap_laps:null};
       };
       form.onsubmit=async e=>{
         e.preventDefault();
@@ -695,29 +869,38 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
         for(const tr of trs){
           const pilot=pilotById(tr.dataset.pilotId),stat=tr.querySelector('[name="status"]').value,pos=tr.querySelector('[name="finish_position"]').value,lapText=tr.querySelector('[name="best_lap"]').value.trim(),lapMs=lapText?parseLap(lapText):null,gap=parseGap(tr.querySelector('[name="gap_display"]').value);
           if(stat==='finished'&&!Number(pos))return status(adminBox,`Informe a posição de ${pilot.display_name}.`,true);
-          if(lapText&&!lapMs)return status(adminBox,`Melhor volta inválida para ${pilot.display_name}; use mm:ss.mmm.`,true);
-          if(!gap)return status(adminBox,`Diferença inválida para ${pilot.display_name}; use +mm:ss.mmm, “1 volta” ou deixe em branco.`,true);
+          if(lapText&&!lapMs)return status(adminBox,`Melhor volta inválida para ${pilot.display_name}; digite apenas números (ex.: 0103607) ou informe mm:ss.mmm.`,true);
+          if(!gap)return status(adminBox,`Diferença inválida para ${pilot.display_name}; digite apenas números (ex.: 6981), “1 volta” ou deixe em branco.`,true);
+          if(lapMs)tr.querySelector('[name="best_lap"]').value=formatLap(lapMs);
+          if(gap.gap_ms!=null)tr.querySelector('[name="gap_display"]').value=gap.gap_display;
         }
-        const saveAdjustment=async(pilotId,kind,reasonCode,points,note)=>{
-          if(points>0){const {error}=await db.from('cka_race_adjustments').upsert({season_id:race.season_id,race_id:race.id,pilot_id:pilotId,kind,reason_code:reasonCode,points,note},{onConflict:'race_id,pilot_id,kind,reason_code'});return error;}
-          const {error}=await db.from('cka_race_adjustments').delete().eq('race_id',race.id).eq('pilot_id',pilotId).eq('kind',kind).eq('reason_code',reasonCode);return error;
-        };
-        let saved=0;
-        for(const tr of trs){
+        const prepared=trs.map(tr=>{
           const pilot=pilotById(tr.dataset.pilotId),stat=tr.querySelector('[name="status"]').value,lapText=tr.querySelector('[name="best_lap"]').value.trim(),gap=parseGap(tr.querySelector('[name="gap_display"]').value),shirt=tr.querySelector('[name="cka_shirt"]').checked,warning=tr.querySelector('[name="warning"]').checked;
           const row={season_id:race.season_id,race_id:race.id,pilot_id:pilot.id,team_id:tr.querySelector('[name="team_id"]').value||null,status:stat,finish_position:stat==='finished'?(Number(tr.querySelector('[name="finish_position"]').value)||null):null,best_lap_ms:lapText?parseLap(lapText):null,...gap};
-          const {error}=await db.from('cka_race_results').upsert(row,{onConflict:'race_id,pilot_id'});
-          if(error)return status(adminBox,`Erro ao salvar ${pilot.display_name} após ${saved} linha(s): ${error.message}`,true);
-          const shirtError=await saveAdjustment(pilot.id,'bonus','cka_shirt',shirt?5:0,shirt?'Camisa CKA':'');
-          if(shirtError)return status(adminBox,`Resultado salvo, mas falhou o bônus da camisa para ${pilot.display_name}: ${shirtError.message}`,true);
-          const warningError=await saveAdjustment(pilot.id,'penalty','warning',warning?3:0,warning?'Advertência: −3 pontos':'');
-          if(warningError)return status(adminBox,`Resultado salvo, mas falhou a penalidade para ${pilot.display_name}: ${warningError.message}`,true);
-          saved++;
-        }
+          return {pilot,row,shirt,warning};
+        });
+        const {error:resultError}=await db.from('cka_race_results').upsert(prepared.map(item=>item.row),{onConflict:'race_id,pilot_id'});
+        if(resultError)return status(adminBox,`Não foi possível salvar os resultados: ${resultError.message}`,true);
+        const pilotIds=prepared.map(item=>item.pilot.id);
+        const adjustments=prepared.flatMap(item=>[
+          ...(item.shirt?[{season_id:race.season_id,race_id:race.id,pilot_id:item.pilot.id,kind:'bonus',reason_code:'cka_shirt',points:5,note:'Camisa CKA'}]:[]),
+          ...(item.warning?[{season_id:race.season_id,race_id:race.id,pilot_id:item.pilot.id,kind:'penalty',reason_code:'warning',points:3,note:'Advertência: −3 pontos'}]:[])
+        ]);
+        const adjustmentOps=[];
+        if(adjustments.length)adjustmentOps.push(db.from('cka_race_adjustments').upsert(adjustments,{onConflict:'race_id,pilot_id,kind,reason_code'}));
+        const noShirtIds=prepared.filter(item=>!item.shirt).map(item=>item.pilot.id);
+        const noWarningIds=prepared.filter(item=>!item.warning).map(item=>item.pilot.id);
+        if(noShirtIds.length)adjustmentOps.push(db.from('cka_race_adjustments').delete().eq('race_id',race.id).eq('kind','bonus').eq('reason_code','cka_shirt').in('pilot_id',noShirtIds));
+        if(noWarningIds.length)adjustmentOps.push(db.from('cka_race_adjustments').delete().eq('race_id',race.id).eq('kind','penalty').eq('reason_code','warning').in('pilot_id',noWarningIds));
+        const adjustmentResults=await Promise.all(adjustmentOps);
+        const adjustmentFailure=adjustmentResults.find(result=>result.error);
+        if(adjustmentFailure)return status(adminBox,`Os resultados foram salvos, mas um bônus/advertência falhou: ${adjustmentFailure.error.message}. Confira os ajustes antes de publicar.`,true);
+        const saved=prepared.length;
         if(form.elements.publish.checked){const {error}=await db.from('cka_races').update({results_published:true,status:'completed'}).eq('id',race.id);if(error)return status(adminBox,`Resultados salvos, mas não foi possível publicar a etapa: ${error.message}`,true);}
         const published=!!(form.elements.publish.checked||race.results_published);
         if(form.elements.publish.checked)race.results_published=true;
         const synced=await refreshPublicData();
+        if(synced)clearDraft(race.id);
         status(adminBox,synced?(published?`${saved} resultado(s) salvos e publicados. Classificações, pontos, vitórias, pódios, equipes, resultados e calendário foram atualizados.`:`${saved} resultado(s) salvos como rascunho. Para atualizar a área pública, marque “Publicar etapa após salvar”. A camisa aplica +5 e a advertência segue a regra dos descartes.`):`Resultados gravados, mas não consegui atualizar a visualização pública: ${publicState.error?.message||'erro de conexão'}.`,!synced);
       };
       select.dispatchEvent(new Event('change'));
@@ -753,7 +936,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
         if(!window.confirm(`Excluir definitivamente o piloto ${pilot.display_name}? Esta ação não pode ser desfeita.`))return;
         const {error}=await db.from('cka_pilots').delete().eq('id',pilot.id);
         if(error)return status(adminBox,error.message,true);
-        await initAdminData();renderEditor('pilots');status(adminBox,`Piloto ${pilot.display_name} excluído.`);
+        state.initialized=false;await initAdminData();renderEditor('pilots');status(adminBox,`Piloto ${pilot.display_name} excluído.`);
       });
       form.onsubmit=async e=>{
         e.preventDefault();
@@ -774,6 +957,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
           :await db.from('cka_pilots').insert(row);
         if(result.error)return status(adminBox,result.error.message,true);
         const savedId=state.editingPilotId;
+        state.initialized=false;
         await initAdminData();
         await refreshPublicData();
         renderEditor('pilots');
@@ -782,7 +966,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
       };
       picker.dispatchEvent(new Event('change'));
     }
-    if(which==='schedule')form.onsubmit=async e=>{e.preventDefault();const f=new FormData(form),{error}=await db.from('cka_races').update({race_date:f.get('race_date'),start_time:f.get('start_time'),venue:f.get('venue'),location:f.get('location')}).eq('id',f.get('race_id'));if(!error)await refreshPublicData();status(adminBox,error?.message||'Etapa atualizada.',!!error);};
+    if(which==='schedule')form.onsubmit=async e=>{e.preventDefault();const f=new FormData(form),race=state.races.find(item=>item.id===f.get('race_id')),updates={race_date:f.get('race_date'),start_time:f.get('start_time'),venue:f.get('venue'),location:f.get('location')};const {error}=await db.from('cka_races').update(updates).eq('id',f.get('race_id'));if(!error){Object.assign(race,updates);await refreshPublicData();}status(adminBox,error?.message||'Etapa atualizada.',!!error);};
     if(which==='team')form.onsubmit=async e=>{e.preventDefault();const f=new FormData(form),pilot=state.pilots.find(x=>x.id===f.get('pilot_id'));const {error}=await db.from('cka_pilots').update({default_team_id:f.get('team_id')||null}).eq('id',pilot.id);if(!error){pilot.default_team_id=f.get('team_id')||null;await refreshPublicData();}status(adminBox,error?.message||'Equipe padrão do piloto atualizada.',!!error);};
     if(which==='media')form.onsubmit=async e=>{e.preventDefault();const f=new FormData(form),type=f.get('media_type'),race=state.races.find(x=>x.id===f.get('race_id'));let storage_path=null,youtube_url=null;if(type==='photo'){const file=f.get('image');if(!file?.size)return status(adminBox,'Escolha uma imagem.',true);const clean=file.name.toLowerCase().replace(/[^a-z0-9._-]+/g,'-'),path=`2026/etapa-${race.round_number}/${crypto.randomUUID()}-${clean}`;const {error}=await db.storage.from('cka-media').upload(path,file,{upsert:false});if(error)return status(adminBox,error.message,true);storage_path=path;}else{youtube_url=f.get('youtube_url');if(!youtubeId(youtube_url))return status(adminBox,'Informe um link válido do YouTube.',true);}const row={season_id:race.season_id,race_id:race.id,pilot_id:f.get('pilot_id')||null,media_type:type,title:f.get('title'),description:f.get('description')||null,storage_path,youtube_url,alt_text:f.get('title'),is_published:f.get('is_published')==='on'};const {error}=await db.from('cka_media').insert(row);status(adminBox,error?.message||'Mídia cadastrada.',!!error);if(!error)form.reset();};
   }
@@ -799,5 +983,5 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
   void refreshPublicData();
   document.addEventListener('visibilitychange',()=>{if(!document.hidden)void refreshPublicData();});
   window.setInterval(()=>{if(!document.hidden)void refreshPublicData();},30000);
-  db.auth.onAuthStateChange((event) => { if(event==='SIGNED_IN'||event==='SIGNED_OUT'||event==='TOKEN_REFRESHED'){ if(document.querySelector('#cka-admin.active')) renderAdmin(); } });
+  db.auth.onAuthStateChange((event) => { if(event==='SIGNED_IN'||event==='SIGNED_OUT'){ if(event==='SIGNED_OUT'){state.admin=false;state.initialized=false;} if(document.querySelector('#cka-admin.active')) renderAdmin(); } });
 })();

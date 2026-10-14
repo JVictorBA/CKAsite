@@ -1,6 +1,47 @@
 (function () {
   'use strict';
 
+  if (window.CKA_SUPABASE_CONFIG?.url) {
+    var loadingStyle = document.createElement('style');
+    loadingStyle.textContent = `
+      html.cka-syncing,html.cka-sync-error{min-height:100%;background:#090a0f}
+      #cka-sync-screen{position:fixed;inset:0;z-index:9999;display:grid;place-content:center;justify-items:center;gap:14px;background:radial-gradient(circle at 50% 35%,rgba(212,175,55,.08),transparent 38%),#090a0f;color:#fff;font:600 14px/1.5 system-ui,sans-serif;text-align:center;padding:24px}
+      #cka-sync-screen[hidden]{display:none}
+      #cka-sync-screen .cka-sync-spinner{width:38px;height:38px;border:3px solid rgba(255,255,255,.14);border-top-color:#d4af37;border-radius:50%;animation:ckaSyncSpin .8s linear infinite}
+      #cka-sync-screen p{max-width:320px;margin:0;color:#aeb4be}
+      #cka-sync-screen button{margin-top:4px;padding:9px 15px;border:1px solid rgba(212,175,55,.55);border-radius:7px;background:transparent;color:#f1d98a;font:inherit;cursor:pointer}
+      @keyframes ckaSyncSpin{to{transform:rotate(360deg)}}
+      @media(prefers-reduced-motion:reduce){#cka-sync-screen .cka-sync-spinner{animation-duration:2.5s}}
+    `;
+    document.head.appendChild(loadingStyle);
+    var syncScreen = document.createElement('div');
+    syncScreen.id = 'cka-sync-screen';
+    syncScreen.setAttribute('role', 'status');
+    syncScreen.setAttribute('aria-live', 'polite');
+    syncScreen.innerHTML = '<span class="cka-sync-spinner" aria-hidden="true"></span><p>Carregando a classificação atual do CKA…</p>';
+    document.documentElement.classList.add('cka-syncing');
+    document.body.appendChild(syncScreen);
+    window.CKA_SYNC_UI = {
+      finish: function (ok, message) {
+        if (ok) {
+          syncScreen.remove();
+          document.documentElement.classList.remove('cka-syncing', 'cka-sync-error');
+          return;
+        }
+        document.documentElement.classList.remove('cka-syncing');
+        document.documentElement.classList.add('cka-sync-error');
+        syncScreen.innerHTML = '<p></p><button type="button">Tentar novamente</button>';
+        syncScreen.querySelector('p').textContent = message || 'Não foi possível atualizar os dados agora.';
+        syncScreen.querySelector('button').addEventListener('click', function () { window.location.reload(); });
+      }
+    };
+    window.setTimeout(function () {
+      if (document.documentElement.classList.contains('cka-syncing')) {
+        window.CKA_SYNC_UI.finish(false, 'A atualização está demorando mais que o esperado. Verifique sua conexão e tente novamente.');
+      }
+    }, 15000);
+  }
+
   // With Supabase configured, the public tables and statistics are rendered
   // from the live standings views by cka-site.js; legacy DOM-derived values
   // must not overwrite those results.
