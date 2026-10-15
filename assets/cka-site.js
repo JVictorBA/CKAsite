@@ -129,6 +129,15 @@ try {
     .cka-form textarea{min-height:70px}.cka-action{border:1px solid #3d75aa;border-radius:8px;padding:10px 14px;background:#123355;color:#fff;font-weight:700;cursor:pointer}.cka-action.primary{background:#ff982d;color:#17120c;border-color:#ff982d}
     .cka-stack{display:grid;gap:18px}.cka-status{min-height:20px;color:#8ce0ad}.cka-tabs{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}.cka-tabs button{background:#15243a;color:#eaf1fb;border:1px solid #304560;border-radius:8px;padding:9px 12px;cursor:pointer}.cka-tabs button.active{border-color:#ff982d;color:#ffbd64}
     .cka-media img{width:100%;max-height:320px;object-fit:cover;border-radius:10px}.cka-media iframe{width:100%;aspect-ratio:16/9;border:0;border-radius:10px}
+    .cka-photo-stage{margin:0 0 28px}.cka-photo-stage h3{margin:0 0 14px;padding-bottom:9px;border-bottom:1px solid var(--border);font-size:19px}
+    .cka-photo-trigger{display:block;width:100%;padding:0;border:0;background:transparent;text-align:left;cursor:zoom-in}
+    .cka-photo-trigger img{transition:transform .18s ease}.cka-photo-trigger:hover img{transform:scale(1.015)}
+    .cka-photo-lightbox{width:min(96vw,1400px);max-width:96vw;max-height:94vh;padding:14px;border:1px solid rgba(255,255,255,.16);border-radius:14px;background:#080b10;color:#fff;box-shadow:0 24px 90px #000b}
+    .cka-photo-lightbox::backdrop{background:rgba(0,0,0,.88);backdrop-filter:blur(4px)}
+    .cka-photo-lightbox figure{display:grid;place-items:center;gap:10px;margin:0}.cka-photo-lightbox img{display:block;max-width:92vw;max-height:82vh;object-fit:contain;border-radius:8px}.cka-photo-lightbox figcaption{color:#d0d6df;font-size:13px;text-align:center}
+    .cka-photo-lightbox-close{position:absolute;top:8px;right:8px;width:38px;height:38px;border:1px solid #ffffff38;border-radius:50%;background:#151a22;color:#fff;font-size:24px;cursor:pointer}
+    .cka-admin-media-list{display:grid;gap:8px;margin:12px 0 20px}.cka-admin-media-item{display:grid;grid-template-columns:20px 72px minmax(0,1fr);align-items:center;gap:12px;padding:10px;border:1px solid var(--border);border-radius:10px;background:var(--surface)}.cka-admin-media-item img{width:72px;height:54px;object-fit:cover;border-radius:6px}.cka-admin-media-item p{margin:4px 0;color:var(--text-muted);font-size:11px}.cka-delete-media{border-color:#8d3131!important;color:#ffb2aa!important}.cka-media-bulk-actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:12px 0}.cka-media-select{width:18px;height:18px;accent-color:#ff982d}
+    @media(max-width:560px){.cka-admin-media-item{grid-template-columns:20px 56px minmax(0,1fr);gap:8px}.cka-admin-media-item img{width:56px;height:48px}}
     .cka-winner{display:flex;align-items:center;gap:12px}.cka-winner img{width:54px;height:54px;object-fit:cover;object-position:top;border-radius:50%;background:#192d45}
     @media(max-width:560px){.cka-extra .head h2{font-size:25px}.cka-form{grid-template-columns:1fr}}
     .top{height:78px!important;min-height:78px!important;padding:0 20px!important;flex-wrap:nowrap!important;justify-content:space-between!important}
@@ -560,6 +569,15 @@ try {
   const adminBox = makePanel('cka-admin', 'Administração CKA', 'Acesso restrito ao administrador.');
   makeTab('cka-calendario', 'Calendário'); makeTab('cka-fotos', 'Fotos'); makeTab('cka-videos', 'Vídeos'); makeTab('cka-admin', 'Admin');
   const state = { admin: false, user: null, races: [], pilots: [], teams: [], initialized: false, editingPilotId: null };
+  const photoLightbox=document.createElement('dialog');
+  photoLightbox.className='cka-photo-lightbox';
+  photoLightbox.setAttribute('aria-label','Visualização ampliada da foto');
+  photoLightbox.innerHTML='<button type="button" class="cka-photo-lightbox-close" aria-label="Fechar foto ampliada">×</button><figure><img alt=""><figcaption></figcaption></figure>';
+  document.body.append(photoLightbox);
+  const lightboxImage=photoLightbox.querySelector('img'),lightboxCaption=photoLightbox.querySelector('figcaption');
+  photoLightbox.querySelector('button').addEventListener('click',()=>photoLightbox.close());
+  photoLightbox.addEventListener('click',event=>{if(event.target===photoLightbox)photoLightbox.close();});
+  photosBox.addEventListener('click',event=>{const trigger=event.target.closest('[data-photo-open]');if(!trigger||!photosBox.contains(trigger))return;const image=trigger.querySelector('img'),title=trigger.dataset.photoTitle||image?.alt||'Foto do campeonato';lightboxImage.src=trigger.dataset.photoSrc||image?.currentSrc||image?.src||'';lightboxImage.alt=title;lightboxCaption.textContent=title;if(typeof photoLightbox.showModal==='function')photoLightbox.showModal();});
   let adminDataPromise = null;
   const html = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const replaceHTML = (root, markup) => { if (root && root.innerHTML !== markup) root.innerHTML = markup; };
@@ -852,10 +870,17 @@ try {
     const races=state.races.length?state.races:(await db.from('cka_races').select('id,round_number').eq('is_published',true)).data||[];
     const raceMap=new Map(races.map(r=>[r.id,r.round_number]));
     if(!data?.length){box.innerHTML='<p class="cka-muted">Ainda não há publicações nesta seção.</p>';return;}
-    box.innerHTML=`<div class="cka-grid">${data.map(m=>{const src=m.media_type==='photo'?db.storage.from('cka-media').getPublicUrl(m.storage_path).data.publicUrl:`https://www.youtube-nocookie.com/embed/${youtubeId(m.youtube_url)}`;return `<article class="cka-card cka-media">${m.media_type==='photo'?`<img loading="lazy" src="${html(src)}" alt="${html(m.alt_text||m.title)}">`:`<iframe loading="lazy" src="${html(src)}" title="${html(m.title)}" allowfullscreen></iframe>`}<h3>${html(m.title)}</h3><p class="cka-muted">Etapa ${raceMap.get(m.race_id)||'—'} · ${html(m.description||'')}</p></article>`}).join('')}</div>`;
+    if(type==='photo'){
+      const grouped=new Map();
+      for(const media of data){const round=raceMap.get(media.race_id),key=round??'—';if(!grouped.has(key))grouped.set(key,[]);grouped.get(key).push(media);}
+      const groups=[...grouped.entries()].sort(([a],[b])=>a==='—'?1:b==='—'?-1:Number(a)-Number(b));
+      box.innerHTML=groups.map(([round,items])=>`<section class="cka-photo-stage"><h3>Etapa ${html(round)}</h3><div class="cka-grid">${items.map(m=>{const src=db.storage.from('cka-media').getPublicUrl(m.storage_path).data.publicUrl,title=m.alt_text||m.title;return `<article class="cka-card cka-media"><button type="button" class="cka-photo-trigger" data-photo-open data-photo-src="${html(src)}" data-photo-title="${html(title)}" aria-label="Ampliar foto: ${html(title)}"><img loading="lazy" src="${html(src)}" alt="${html(title)}"></button><h3>${html(m.title)}</h3><p class="cka-muted">${html(m.description||'')}</p></article>`}).join('')}</div></section>`).join('');
+      return;
+    }
+    box.innerHTML=`<div class="cka-grid">${data.map(m=>{const src=`https://www.youtube-nocookie.com/embed/${youtubeId(m.youtube_url)}`;return `<article class="cka-card cka-media"><iframe loading="lazy" src="${html(src)}" title="${html(m.title)}" allowfullscreen></iframe><h3>${html(m.title)}</h3><p class="cka-muted">Etapa ${raceMap.get(m.race_id)||'—'} · ${html(m.description||'')}</p></article>`}).join('')}</div>`;
   }
   function youtubeId(url='') { try {const u=new URL(url);return u.hostname.includes('youtu.be')?u.pathname.slice(1):u.searchParams.get('v')||u.pathname.split('/').filter(Boolean).pop()||'';}catch{return '';} }
-  function field(label,name,type='text',opts={}) { return `<label>${label}${opts.help?`<small class="cka-muted">${opts.help}</small>`:''}${type==='select'?`<select name="${name}" ${opts.required?'required':''}>${opts.options||''}</select>`:`<input name="${name}" type="${type}" ${opts.required?'required':''} ${opts.step?`step="${opts.step}"`:''} ${opts.accept?`accept="${opts.accept}"`:''} ${opts.min?`min="${opts.min}"`:''} ${opts.placeholder?`placeholder="${opts.placeholder}"`:''}>`}</label>`; }
+  function field(label,name,type='text',opts={}) { return `<label>${label}${opts.help?`<small class="cka-muted">${opts.help}</small>`:''}${type==='select'?`<select name="${name}" ${opts.required?'required':''}>${opts.options||''}</select>`:`<input name="${name}" type="${type}" ${opts.required?'required':''} ${opts.multiple?'multiple':''} ${opts.step?`step="${opts.step}"`:''} ${opts.accept?`accept="${opts.accept}"`:''} ${opts.min?`min="${opts.min}"`:''} ${opts.placeholder?`placeholder="${opts.placeholder}"`:''}>`}</label>`; }
   function options(items, label, val='id') { return (items||[]).map(x=>`<option value="${html(x[val])}">${html(label(x))}</option>`).join(''); }
   async function initAdminData() {
     if(state.initialized)return;
@@ -901,7 +926,7 @@ try {
       host.innerHTML=`<h3>Gerenciar pilotos</h3><p class="cka-muted">Cadastre ou edite os dados do piloto. Se já houver resultados, ajustes ou mídias vinculadas, inative o cadastro para preservar o histórico do campeonato.</p><form class="cka-form" id="cka-pilot">${field('Selecionar piloto para editar','existing_pilot_id','select',{options:editOpts})}${field('Número do piloto','pilot_number','number',{required:true,min:'1'})}${field('Nome completo','full_name','text',{required:true})}${field('Nome exibido no site','display_name','text',{required:true})}${field('Equipe padrão','default_team_id','select',{options:teamOpts})}${field('Caminho da foto atual (opcional)','photo_path','text')}${field('Enviar nova foto (JPG/PNG/WebP)','photo_file','file',{accept:'image/jpeg,image/png,image/webp'})}<label style="display:flex;align-items:center;gap:8px"><input name="is_active" type="checkbox" checked> Piloto ativo</label><button class="cka-action primary">Salvar piloto</button></form><h3>Relação de pilotos</h3><div class="cka-pilots-scroll"><table class="cka-pilots-table"><thead><tr><th>Nº</th><th>Nome exibido</th><th>Nome completo</th><th>Equipe padrão</th><th>Status</th><th>Ações</th></tr></thead><tbody>${state.pilots.map(p=>`<tr><td>${html(p.pilot_number)}</td><td>${html(p.display_name)}</td><td>${html(p.full_name)}</td><td>${html(state.teams.find(t=>t.id===p.default_team_id)?.name||'Sem equipe')}</td><td class="${p.is_active?'':'cka-pilot-inactive'}">${p.is_active?'Ativo':'Inativo'}</td><td><button type="button" class="cka-action" data-edit-pilot="${html(p.id)}">Editar</button> <button type="button" class="cka-action" data-delete-pilot="${html(p.id)}">Excluir</button></td></tr>`).join('')}</tbody></table></div>`;
       state.editingPilotId=null;
     }
-    if(which==='media') host.innerHTML=`<h3>Publicar foto ou link do YouTube</h3><form class="cka-form" id="cka-media">${field('Etapa','race_id','select',{required:true,options:raceOpts})}${field('Tipo','media_type','select',{options:'<option value="photo">Foto</option><option value="youtube">YouTube</option>'})}${field('Título','title','text',{required:true})}${field('Descrição','description')}${field('Piloto relacionado (opcional)','pilot_id','select',{options:'<option value="">Não relacionado</option>'+pilotOpts})}${field('Arquivo de imagem (JPG/PNG/WebP)','image','file',{accept:'image/jpeg,image/png,image/webp'})}${field('Link do YouTube','youtube_url','url')}<label style="display:flex;align-items:center;gap:8px"><input name="is_published" type="checkbox"> Publicar imediatamente</label><button class="cka-action primary">Salvar mídia</button></form>`;
+    if(which==='media') host.innerHTML=`<h3>Publicar foto ou link do YouTube</h3><p class="cka-muted">Selecione várias imagens de uma vez. Cada arquivo será cadastrado na etapa escolhida.</p><form class="cka-form" id="cka-media">${field('Etapa','race_id','select',{required:true,options:raceOpts})}${field('Tipo','media_type','select',{options:'<option value="photo">Foto</option><option value="youtube">YouTube</option>'})}${field('Título (opcional; aplicado às imagens)','title','text')}${field('Descrição','description')}${field('Piloto relacionado (opcional)','pilot_id','select',{options:'<option value="">Não relacionado</option>'+pilotOpts})}${field('Arquivos de imagem (selecione várias)','image','file',{accept:'image/jpeg,image/png,image/webp',multiple:true})}${field('Link do YouTube','youtube_url','url')}<label style="display:flex;align-items:center;gap:8px"><input name="is_published" type="checkbox"> Publicar imediatamente</label><button class="cka-action primary">Salvar mídia</button></form><h3>Fotos e vídeos cadastrados</h3><div class="cka-media-bulk-actions"><label style="display:flex;align-items:center;gap:8px"><input class="cka-media-select" type="checkbox" data-select-all-media> Selecionar todos</label><button type="button" class="cka-action cka-delete-media" data-delete-selected-media disabled>Excluir selecionados</button></div><div class="cka-admin-media-list" data-admin-media-list aria-live="polite"><p class="cka-muted">Carregando mídias…</p></div>`;
     bindEditor(which,host);
   }
   function bindEditor(which,host) {
@@ -1160,7 +1185,62 @@ try {
     }
     if(which==='schedule')form.onsubmit=async e=>{e.preventDefault();const f=new FormData(form),race=state.races.find(item=>item.id===f.get('race_id')),updates={race_date:f.get('race_date'),start_time:f.get('start_time'),venue:f.get('venue'),location:f.get('location')};const {error}=await db.from('cka_races').update(updates).eq('id',f.get('race_id'));if(!error){Object.assign(race,updates);await refreshPublicData();}status(adminBox,error?.message||'Etapa atualizada.',!!error);};
     if(which==='team')form.onsubmit=async e=>{e.preventDefault();const f=new FormData(form),pilot=state.pilots.find(x=>x.id===f.get('pilot_id'));const {error}=await db.from('cka_pilots').update({default_team_id:f.get('team_id')||null}).eq('id',pilot.id);if(!error){pilot.default_team_id=f.get('team_id')||null;await refreshPublicData();}status(adminBox,error?.message||'Equipe padrão do piloto atualizada.',!!error);};
-    if(which==='media')form.onsubmit=async e=>{e.preventDefault();const f=new FormData(form),type=f.get('media_type'),race=state.races.find(x=>x.id===f.get('race_id'));let storage_path=null,youtube_url=null;if(type==='photo'){const file=f.get('image');if(!file?.size)return status(adminBox,'Escolha uma imagem.',true);const clean=file.name.toLowerCase().replace(/[^a-z0-9._-]+/g,'-'),path=`2026/etapa-${race.round_number}/${crypto.randomUUID()}-${clean}`;const {error}=await db.storage.from('cka-media').upload(path,file,{upsert:false});if(error)return status(adminBox,error.message,true);storage_path=path;}else{youtube_url=f.get('youtube_url');if(!youtubeId(youtube_url))return status(adminBox,'Informe um link válido do YouTube.',true);}const row={season_id:race.season_id,race_id:race.id,pilot_id:f.get('pilot_id')||null,media_type:type,title:f.get('title'),description:f.get('description')||null,storage_path,youtube_url,alt_text:f.get('title'),is_published:f.get('is_published')==='on'};const {error}=await db.from('cka_media').insert(row);status(adminBox,error?.message||'Mídia cadastrada.',!!error);if(!error)form.reset();};
+    if(which==='media'){
+      const list=host.querySelector('[data-admin-media-list]'),selectAll=host.querySelector('[data-select-all-media]'),deleteSelected=host.querySelector('[data-delete-selected-media]');
+      let mediaRows=[];
+      const chosenIds=()=>[...host.querySelectorAll('[data-select-media]:checked')].map(input=>input.value);
+      const syncSelection=()=>{const selected=chosenIds();deleteSelected.disabled=!selected.length;selectAll.checked=!!mediaRows.length&&selected.length===mediaRows.length;selectAll.indeterminate=selected.length>0&&selected.length<mediaRows.length;};
+      const loadAdminMedia=async()=>{
+        list.innerHTML='<p class="cka-muted">Carregando mídias…</p>';
+        const ids=state.races.map(r=>r.id);
+        if(!ids.length){list.innerHTML='<p class="cka-muted">Nenhuma etapa cadastrada.</p>';return;}
+        const {data,error}=await db.from('cka_media').select('id,title,description,media_type,storage_path,youtube_url,race_id,is_published,created_at').in('race_id',ids).order('created_at',{ascending:false});
+        if(error){list.innerHTML='<p class="cka-muted">Não foi possível carregar as mídias.</p>';status(adminBox,error.message,true);return;}
+        mediaRows=data||[];
+        if(!mediaRows.length){list.innerHTML='<p class="cka-muted">Nenhuma foto ou vídeo cadastrado.</p>';selectAll.checked=false;deleteSelected.disabled=true;return;}
+        list.innerHTML=mediaRows.map(m=>{const round=state.races.find(r=>r.id===m.race_id)?.round_number??'—',src=m.media_type==='photo'&&m.storage_path?db.storage.from('cka-media').getPublicUrl(m.storage_path).data.publicUrl:'';return `<article class="cka-admin-media-item"><input class="cka-media-select" type="checkbox" data-select-media value="${html(m.id)}" aria-label="Selecionar ${html(m.title)}">${src?`<img loading="lazy" src="${html(src)}" alt="">`:'<div aria-hidden="true">▶</div>'}<div><strong>${html(m.title)}</strong><p>${m.media_type==='photo'?'Foto':'YouTube'} · Etapa ${html(round)} · ${m.is_published?'Publicada':'Rascunho'}</p></div></article>`}).join('');
+        syncSelection();
+      };
+      list.addEventListener('change',event=>{if(event.target.matches('[data-select-media]'))syncSelection();});
+      selectAll.onchange=()=>{host.querySelectorAll('[data-select-media]').forEach(input=>input.checked=selectAll.checked);syncSelection();};
+      deleteSelected.onclick=async()=>{
+        const ids=chosenIds(),selected=mediaRows.filter(m=>ids.includes(m.id));
+        if(!selected.length||!window.confirm(`Excluir ${selected.length} mídia(s) selecionada(s) definitivamente?`))return;
+        deleteSelected.disabled=true;deleteSelected.textContent='Excluindo…';
+        const paths=selected.filter(m=>m.media_type==='photo'&&m.storage_path).map(m=>m.storage_path);
+        if(paths.length){const {error}=await db.storage.from('cka-media').remove(paths);if(error){status(adminBox,`Não foi possível apagar os arquivos: ${error.message}.`,true);deleteSelected.textContent='Excluir selecionados';syncSelection();return;}}
+        const {data,error}=await db.from('cka_media').delete().in('id',ids).select('id');
+        if(error){status(adminBox,paths.length?`Os arquivos foram removidos, mas os cadastros não: ${error.message}`:error.message,true);deleteSelected.textContent='Excluir selecionados';syncSelection();return;}
+        status(adminBox,`${data?.length??ids.length} mídia(s) excluída(s).`);
+        deleteSelected.textContent='Excluir selecionados';await loadAdminMedia();
+        if(selected.some(m=>m.media_type==='photo'&&m.is_published))void loadMedia('photo');
+      };
+      form.onsubmit=async e=>{
+        e.preventDefault();const f=new FormData(form),type=f.get('media_type'),race=state.races.find(x=>x.id===f.get('race_id'));
+        if(!race)return status(adminBox,'Selecione uma etapa.',true);
+        const common={season_id:race.season_id,race_id:race.id,pilot_id:f.get('pilot_id')||null,description:f.get('description')||null,is_published:f.get('is_published')==='on'};
+        if(type==='youtube'){
+          const youtube_url=f.get('youtube_url');if(!youtubeId(youtube_url))return status(adminBox,'Informe um link válido do YouTube.',true);
+          const title=f.get('title')||'Vídeo do campeonato', {error}=await db.from('cka_media').insert({...common,media_type:type,title,alt_text:title,youtube_url,storage_path:null});
+          if(error)return status(adminBox,error.message,true);
+          status(adminBox,'Vídeo cadastrado.');form.reset();await loadAdminMedia();return;
+        }
+        const files=[...form.elements.image.files];if(!files.length)return status(adminBox,'Selecione uma ou mais imagens.',true);
+        let added=0;
+        for(const file of files){
+          if(!/^image\/(jpeg|png|webp)$/.test(file.type)){status(adminBox,`Formato não aceito: ${file.name}. Use JPG, PNG ou WebP.`,true);continue;}
+          const clean=file.name.toLowerCase().replace(/[^a-z0-9._-]+/g,'-'),path=`2026/etapa-${race.round_number}/${crypto.randomUUID()}-${clean}`;
+          const {error:uploadError}=await db.storage.from('cka-media').upload(path,file,{upsert:false});
+          if(uploadError){status(adminBox,`Falha ao enviar ${file.name}: ${uploadError.message}`,true);continue;}
+          const title=(files.length===1&&f.get('title'))?f.get('title'):file.name.replace(/\.[^.]+$/,'');
+          const {error:insertError}=await db.from('cka_media').insert({...common,media_type:'photo',title,alt_text:title,storage_path:path,youtube_url:null});
+          if(insertError){await db.storage.from('cka-media').remove([path]);status(adminBox,`Falha ao cadastrar ${file.name}: ${insertError.message}`,true);continue;}
+          added++;status(adminBox,`Enviando fotos… ${added}/${files.length}`);
+        }
+        if(added){form.reset();status(adminBox,`${added} foto(s) adicionada(s) à Etapa ${race.round_number}.`);await loadAdminMedia();if(common.is_published)void loadMedia('photo');}
+      };
+      void loadAdminMedia();
+    }
   }
   void refreshPublicData();
   document.addEventListener('visibilitychange',()=>{if(!document.hidden)void refreshPublicData();});
