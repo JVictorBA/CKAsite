@@ -375,6 +375,7 @@ try {
     #teams .teamrow.headrow{grid-template-columns:58px minmax(0,1fr) 90px!important}
     #teams .team-details{display:block!important;min-width:0!important;width:100%!important}
     #teams .team-toggle{display:flex!important;width:100%!important;min-width:0!important;align-items:center!important;justify-content:space-between!important;gap:12px!important;padding:4px 0!important;border:0!important;background:transparent!important;color:#fff!important;font:inherit!important;font-weight:800!important;text-align:left!important;cursor:pointer!important}
+    #teams .team-toggle:after{content:none!important;display:none!important}
     #teams .team-toggle:focus-visible{outline:2px solid var(--gold)!important;outline-offset:4px!important}
     #teams .team-toggle-mark{display:inline-flex!important;width:24px;height:24px;flex:0 0 24px;align-items:center;justify-content:center;border:1px solid rgba(212,175,55,.4);border-radius:50%;color:var(--gold);font-size:17px;line-height:1}
     #teams .team-details-content[hidden]{display:none!important}
@@ -383,6 +384,7 @@ try {
     #teams .team-member{display:flex!important;flex:0 0 auto!important;align-items:center!important;gap:8px!important;max-width:190px!important;color:#e8eaf0!important;font-size:12px!important;white-space:nowrap!important;scroll-snap-align:start}
     #teams .team-member img,#teams .team-member .placeholder{display:block!important;width:42px!important;height:42px!important;min-width:42px!important;flex:0 0 42px!important;border-radius:50%!important;object-fit:cover!important;background-color:#191d25!important}
     #teams .team-score-table-wrap{width:100%!important;max-width:100%!important;overflow:auto!important;border:1px solid var(--border)!important;border-radius:8px!important;background:#101319!important;-webkit-overflow-scrolling:touch}
+    #teams .team-score-mobile{display:none!important}
     #teams .team-score-table{width:100%!important;min-width:1120px!important;border-collapse:collapse!important;font-size:11px!important}
     #teams .team-score-table th,#teams .team-score-table td{padding:9px 10px!important;border-bottom:1px solid rgba(255,255,255,.07)!important;text-align:center!important;white-space:nowrap!important}
     #teams .team-score-table thead th{position:sticky!important;top:0!important;background:#1a2028!important;color:var(--text-muted)!important;font-size:10px!important;text-transform:uppercase!important;z-index:1}
@@ -412,6 +414,12 @@ try {
 
     /* Mobile: keep the standings and race results inside the viewport. */
     @media(max-width:640px){
+      /* Ensure the PWA document remains vertically scrollable on touch devices. */
+      html,body{height:auto!important;min-height:100%!important;overflow-x:hidden!important;overflow-y:auto!important;touch-action:pan-y!important;-webkit-overflow-scrolling:touch}
+      body{position:static!important}
+      main.wrap,.panel.active,#classificacao{height:auto!important;min-height:0!important;max-height:none!important;overflow:visible!important;touch-action:pan-y!important}
+      main.wrap{padding-bottom:calc(40px + env(safe-area-inset-bottom))!important}
+      #classificacao .scroll{touch-action:pan-y!important;-webkit-overflow-scrolling:touch}
       .wrap{width:calc(100% - 20px)!important}
       #classificacao .scroll{position:static!important;max-height:none!important;overflow:visible!important;border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important}
       #classification.table{width:100%!important;min-width:0!important}
@@ -452,6 +460,19 @@ try {
       #teams .teamrow:not(.headrow)>:nth-child(4){display:none!important}
       #teams .teamrow.headrow{grid-template-columns:42px minmax(0,1fr) 68px!important;padding:10px 8px!important}
       #teams .teamrow.headrow>:nth-child(4){display:none!important}
+      #teams .team-toggle:after{content:none!important;display:none!important}
+      #teams .team-score-table-wrap{display:none!important}
+      #teams .team-score-mobile{display:grid!important;gap:9px!important;margin:6px 0 0!important}
+      #teams .team-score-stage{padding:10px!important;border:1px solid rgba(255,255,255,.08)!important;border-radius:10px!important;background:#10151c!important}
+      #teams .team-score-stage h4{display:flex!important;justify-content:space-between!important;gap:8px!important;margin:0 0 6px!important;padding-bottom:7px!important;border-bottom:1px solid rgba(255,255,255,.1)!important;color:var(--gold)!important;font-size:12px!important}
+      #teams .team-score-stage h4 span{overflow:hidden!important;color:var(--text-muted)!important;font-size:10px!important;font-weight:500!important;text-overflow:ellipsis!important;white-space:nowrap!important}
+      #teams .team-score-mobile-row{display:flex!important;justify-content:space-between!important;align-items:center!important;gap:10px!important;min-height:38px!important;padding:4px 0!important;border-bottom:1px solid rgba(255,255,255,.05)!important}
+      #teams .team-score-mobile-row>span{display:flex!important;align-items:center!important;gap:7px!important;min-width:0!important;color:var(--text-primary)!important;font-size:11px!important}
+      #teams .team-score-mobile-row>span strong{overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important}
+      #teams .team-score-mobile-row img,#teams .team-score-mobile-row .placeholder{width:28px!important;height:28px!important;min-width:28px!important;flex:0 0 28px!important;border-radius:50%!important;object-fit:cover!important}
+      #teams .team-score-mobile-row>b{display:flex!important;align-items:center!important;justify-content:flex-end!important;gap:3px!important;min-width:32px!important;color:var(--text-primary)!important;font-size:12px!important}
+      #teams .team-score-mobile-total{display:flex!important;justify-content:space-between!important;gap:8px!important;padding-top:8px!important;color:var(--gold)!important;font-size:11px!important}
+      #teams .team-score-mobile-total b{font-size:14px!important}
     }
   `;
   const hero=document.querySelector('.hero');
@@ -560,13 +581,19 @@ try {
     }
   }, true);
   const lapText = ms => ms == null ? '—' : `${String(Math.floor(ms / 60000)).padStart(2,'0')}:${String(Math.floor(ms / 1000) % 60).padStart(2,'0')}.${String(ms % 1000).padStart(3,'0')}`;
-  async function refreshPublicData() {
+  let publicRefreshPromise=null;
+  function refreshPublicData() {
+    if(publicRefreshPromise)return publicRefreshPromise;
+    publicRefreshPromise=loadPublicData().finally(()=>{publicRefreshPromise=null;});
+    return publicRefreshPromise;
+  }
+  async function loadPublicData() {
     try {
     const [seasonResult, raceResult, pointsResult, standingsResult, pilotsResult, teamsResult] = await Promise.all([
       db.from('cka_seasons').select('id,season_year').eq('is_active', true).maybeSingle(),
       db.from('cka_races').select('id,season_id,round_number,race_date,start_time,venue,location,status,is_published,results_published').eq('is_published', true).order('round_number'),
-      db.from('cka_pilot_stage_points').select('*').order('round_number'),
-      db.from('cka_pilot_standings').select('*'),
+      db.from('cka_pilot_stage_points').select('*').order('round_number').order('pilot_id'),
+      db.from('cka_pilot_standings').select('*').order('pilot_id'),
       db.from('cka_pilots').select('id,season_id,pilot_number,full_name,display_name,default_team_id,photo_path,is_active').eq('is_active', true).order('pilot_number'),
       db.from('cka_teams').select('id,season_id,name,is_active').eq('is_active', true).order('name')
     ]);
@@ -578,25 +605,31 @@ try {
     const eligibleIds = races.filter(race => race.status === 'completed' && race.results_published).map(race => race.id);
     let results = [];
     if (eligibleIds.length) {
-      const result = await db.from('cka_race_results').select('race_id,pilot_id,team_id,status,finish_position,best_lap_ms,gap_display').in('race_id', eligibleIds).order('finish_position');
+      const result = await db.from('cka_race_results').select('race_id,pilot_id,team_id,status,finish_position,best_lap_ms,gap_display').in('race_id', eligibleIds).order('finish_position').order('pilot_id');
       if (result.error) { publicState.error = result.error; console.warn('CKA: falha ao carregar os tempos oficiais.', result.error); showPublicSyncNotice(`Não foi possível carregar os resultados publicados: ${result.error.message||'erro de conexão'}.`); return false; }
       results = result.data || [];
     }
-    publicState.races = races;
-    publicState.stagePoints = (pointsResult.data || []).filter(row=>row.season_id===activeSeasonId);
-    publicState.standings = (standingsResult.data || []).filter(row=>row.season_id===activeSeasonId);
-    publicState.pilots = (pilotsResult.data || []).filter(row=>row.season_id===activeSeasonId);
-    publicState.teams = (teamsResult.data || []).filter(row=>row.season_id===activeSeasonId);
-    publicState.results = results;
+    const nextState={
+      races,
+      stagePoints:(pointsResult.data||[]).filter(row=>row.season_id===activeSeasonId),
+      standings:(standingsResult.data||[]).filter(row=>row.season_id===activeSeasonId),
+      pilots:(pilotsResult.data||[]).filter(row=>row.season_id===activeSeasonId),
+      teams:(teamsResult.data||[]).filter(row=>row.season_id===activeSeasonId),
+      results
+    };
+    const snapshot=JSON.stringify([activeSeasonId,nextState.races,nextState.stagePoints,nextState.standings,nextState.pilots,nextState.teams,nextState.results]);
+    const unchanged=publicState.ready&&publicState.snapshot===snapshot;
+    Object.assign(publicState,nextState,{snapshot});
     publicState.ready = true;
     publicState.error = null;
+    window.ckaMarkLiveDataReady?.();
+    clearPublicSyncNotice();
+    if(unchanged)return true;
     renderLiveStandings();
     renderLiveTeams();
     renderLivePilots();
     renderLiveResults();
     syncLiveSeasonFacts();
-    window.ckaMarkLiveDataReady?.();
-    clearPublicSyncNotice();
     window.dispatchEvent(new CustomEvent('cka:public-data-updated'));
     return true;
     } catch (error) {
@@ -701,8 +734,18 @@ try {
       }).join('');
       const teamCells=Array.from({length:11},(_,i)=>{const score=entry.rounds.get(i+1);return `<td>${score?score.points: '—'}</td>`;}).join('');
       const scoresTable=`<div class="team-score-table-wrap"><table class="team-score-table"><thead><tr><th scope="col">Piloto</th>${stageHeaders}<th scope="col">Total piloto</th></tr></thead><tbody>${pilotRows}<tr class="team-score-total"><th scope="row">Total da equipe (2 melhores)</th>${teamCells}<td>${entry.total}</td></tr></tbody></table></div>`;
+      const mobileBreakdown=races.map(race=>{
+        const round=Number(race.round_number),teamRound=entry.rounds.get(round);
+        const rows=[...entry.pilotScores.values()].sort((a,b)=>a.pilot.display_name.localeCompare(b.pilot.display_name,'pt-BR')).map(({pilot,rounds})=>{
+          const item=rounds.get(round),net=item?(Number(item.race_points)||0)-(Number(item.penalty_points)||0):null;
+          const warning=item&&Number(item.penalty_points)>0?'<span class="penalty-mark" title="Advertência" aria-label="Recebeu advertência">!</span>':'';
+          return `<div class="team-score-mobile-row"><span>${avatarMarkup(pilot)}<strong>${html(pilot.display_name)}</strong></span><b>${net===null?'—':net}${warning}</b></div>`;
+        }).join('');
+        return `<section class="team-score-stage"><h4>Etapa ${round} <span>${html(race.venue||'')}</span></h4>${rows}<div class="team-score-mobile-total"><strong>Total da equipe (2 melhores)</strong><b>${teamRound?teamRound.points:'—'}</b></div></section>`;
+      }).join('')||'<p class="team-muted">Ainda não há etapas publicadas.</p>';
+      const scoresMobile=`<div class="team-score-mobile">${mobileBreakdown}</div>`;
       const expanded=expandedTeamIds.has(entry.team.id);
-      return `<div class="teamrow"><b class="team-position">${index+1}º</b><div class="team-details"><button type="button" class="team-toggle" data-team-toggle="${html(entry.team.id)}" aria-controls="team-score-${index}" aria-expanded="${expanded}"><span>${html(entry.team.name)}</span><span class="team-toggle-mark" aria-hidden="true">${expanded?'−':'+'}</span></button><div class="team-details-content" id="team-score-${index}"${expanded?'':' hidden'}><div class="team-member-strip">${memberStrip}</div>${scoresTable}</div></div><strong class="points">${entry.total}</strong></div>`;
+      return `<div class="teamrow"><b class="team-position">${index+1}º</b><div class="team-details"><button type="button" class="team-toggle" data-team-toggle="${html(entry.team.id)}" aria-controls="team-score-${index}" aria-expanded="${expanded}"><span>${html(entry.team.name)}</span><span class="team-toggle-mark" aria-hidden="true">${expanded?'−':'+'}</span></button><div class="team-details-content" id="team-score-${index}"${expanded?'':' hidden'}><div class="team-member-strip">${memberStrip}</div>${scoresTable}${scoresMobile}</div></div><strong class="points">${entry.total}</strong></div>`;
     }).join(''));
     const liveTeamIds=new Set(ranked.map(entry=>entry.team.id));
     [...expandedTeamIds].forEach(id=>{if(!liveTeamIds.has(id))expandedTeamIds.delete(id);});
@@ -743,7 +786,17 @@ try {
     const current=requested&&completed.some(r=>r.round_number===requested)?requested:(completed.at(-1)?.round_number||null);
     publicState.selectedRound=current;
     replaceHTML(buttonBox,publicState.races.map(r=>`<button type="button" class="result-btn ${r.round_number===current?'active':''}" data-round="${r.round_number}" ${completed.includes(r)?'':'disabled'}>Etapa ${r.round_number} · ${html(r.venue)}</button>`).join(''));
-    buttonBox.onclick=event=>{const button=event.target.closest('[data-round]');if(!button)return;publicState.selectedRound=Number(button.dataset.round);renderLiveResults(publicState.selectedRound);};
+    if(!buttonBox.dataset.roundHandlerBound){
+      buttonBox.dataset.roundHandlerBound='true';
+      buttonBox.addEventListener('click',event=>{
+        const button=event.target.closest('[data-round]');
+        if(!button||button.disabled)return;
+        const round=Number(button.dataset.round);
+        if(round===publicState.selectedRound)return;
+        publicState.selectedRound=round;
+        renderLiveResults(round);
+      });
+    }
     const race=completed.find(r=>r.round_number===current);
     if(!race){replaceHTML(resultBox,'<p class="cka-muted">Ainda não há resultados publicados.</p>');return;}
     const rows=publicState.results.filter(row=>row.race_id===race.id).sort((a,b)=>(a.finish_position??999)-(b.finish_position??999));
@@ -1109,16 +1162,6 @@ try {
     if(which==='team')form.onsubmit=async e=>{e.preventDefault();const f=new FormData(form),pilot=state.pilots.find(x=>x.id===f.get('pilot_id'));const {error}=await db.from('cka_pilots').update({default_team_id:f.get('team_id')||null}).eq('id',pilot.id);if(!error){pilot.default_team_id=f.get('team_id')||null;await refreshPublicData();}status(adminBox,error?.message||'Equipe padrão do piloto atualizada.',!!error);};
     if(which==='media')form.onsubmit=async e=>{e.preventDefault();const f=new FormData(form),type=f.get('media_type'),race=state.races.find(x=>x.id===f.get('race_id'));let storage_path=null,youtube_url=null;if(type==='photo'){const file=f.get('image');if(!file?.size)return status(adminBox,'Escolha uma imagem.',true);const clean=file.name.toLowerCase().replace(/[^a-z0-9._-]+/g,'-'),path=`2026/etapa-${race.round_number}/${crypto.randomUUID()}-${clean}`;const {error}=await db.storage.from('cka-media').upload(path,file,{upsert:false});if(error)return status(adminBox,error.message,true);storage_path=path;}else{youtube_url=f.get('youtube_url');if(!youtubeId(youtube_url))return status(adminBox,'Informe um link válido do YouTube.',true);}const row={season_id:race.season_id,race_id:race.id,pilot_id:f.get('pilot_id')||null,media_type:type,title:f.get('title'),description:f.get('description')||null,storage_path,youtube_url,alt_text:f.get('title'),is_published:f.get('is_published')==='on'};const {error}=await db.from('cka_media').insert(row);status(adminBox,error?.message||'Mídia cadastrada.',!!error);if(!error)form.reset();};
   }
-  let liveRenderQueued=false;
-  const repairLiveMarkup=()=>{
-    if(!publicState.ready||liveRenderQueued)return;
-    liveRenderQueued=true;
-    requestAnimationFrame(()=>{liveRenderQueued=false;renderLiveStandings();renderLiveTeams();renderLivePilots();renderLiveResults(publicState.selectedRound);syncLiveSeasonFacts();});
-  };
-  ['#classification','#teams','#pilotcards','#resultbuttons','#results'].forEach(selector=>{
-    const node=document.querySelector(selector);
-    if(node)new MutationObserver(repairLiveMarkup).observe(node,{childList:true,subtree:true,characterData:true});
-  });
   void refreshPublicData();
   document.addEventListener('visibilitychange',()=>{if(!document.hidden)void refreshPublicData();});
   window.setInterval(()=>{if(!document.hidden)void refreshPublicData();},30000);
