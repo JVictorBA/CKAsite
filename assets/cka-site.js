@@ -1,8 +1,19 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+let createClient;
+try {
+  ({ createClient } = await import('https://esm.sh/@supabase/supabase-js@2'));
+} catch (primaryError) {
+  console.warn('CKA: esm.sh indisponível; tentando o CDN alternativo.', primaryError);
+  try {
+    ({ createClient } = await import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm'));
+  } catch (fallbackError) {
+    console.error('CKA: não foi possível carregar supabase-js pelos CDNs disponíveis.', fallbackError);
+    window.ckaMarkLiveDataFailed?.('Não foi possível carregar a biblioteca de conexão. Confira a internet ou bloqueadores de conteúdo e tente novamente.');
+  }
+}
 
 (() => {
   const config = window.CKA_SUPABASE_CONFIG;
-  if (!config?.url || !config?.publishableKey) return;
+  if (!config?.url || !config?.publishableKey || typeof createClient !== 'function') return;
   const fetchWithTimeout = (input, init = {}) => {
     const controller = new AbortController();
     const originalSignal = init.signal;
@@ -17,6 +28,8 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
   };
   const db = createClient(config.url, config.publishableKey, { global: { fetch: fetchWithTimeout } });
   const publicState = { races: [], pilots: [], teams: [], stagePoints: [], standings: [], results: [], ready: false, error: null };
+  const expandedTeamIds = new Set();
+  const boundTeamButtons = new WeakSet();
   function showPublicSyncNotice(message) {
     if(!publicState.ready)window.ckaMarkLiveDataFailed?.(`${message} A tabela antiga foi ocultada para não apresentar pontos incorretos.`);
     let notice = document.getElementById('cka-public-sync-warning');
@@ -333,8 +346,11 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
     #pilotcards .pilot-card h3{margin:10px 2px 2px!important;color:#fff!important;font-size:15px!important;line-height:1.25!important;overflow-wrap:anywhere}
     #pilotcards .pilot-detail{margin-top:18px!important;padding:18px!important;border:1px solid var(--border)!important;border-radius:12px!important;background:var(--surface)!important;box-shadow:none!important;backdrop-filter:none!important}
     #pilotcards .pilot-detail-head img,#pilotcards .pilot-detail-head>.placeholder{border:0!important;border-radius:8px!important;box-shadow:none!important}
-    #pilotcards .pilot-detail-stats{border:0!important;border-radius:8px!important;background:rgba(255,255,255,.035)!important}
-    #pilotcards .pilot-detail-stats div{border-color:var(--border)!important}
+    #pilotcards .pilot-detail-stats{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;width:100%!important;min-width:0!important;overflow:hidden!important;border:0!important;border-radius:8px!important;background:rgba(255,255,255,.035)!important}
+    #pilotcards .pilot-detail-stats div{min-width:0!important;padding:10px 4px!important;overflow:hidden!important;border-color:var(--border)!important}
+    #pilotcards .pilot-detail-stats div:nth-child(odd){border-left:0!important}
+    #pilotcards .pilot-detail-stats div:nth-child(n+3){border-top:1px solid var(--border)!important}
+    #pilotcards .pilot-detail-stats span{display:block!important;font-size:9px!important;line-height:1.1!important;letter-spacing:0!important;white-space:normal!important;overflow-wrap:anywhere!important}
     #pilotcards .pilot-detail-stats b{color:var(--gold)!important}
     #pilotcards .pilot-detail-stats div:nth-child(2) b,#pilotcards .pilot-detail-stats div:nth-child(3) b,#pilotcards .pilot-detail-stats div:nth-child(4) b,#pilotcards .pilot-detail-stats div:nth-child(5) b{color:var(--gold)!important}
     @media(max-width:900px){body.cka-home-active .cka-home-layout{grid-template-columns:minmax(0,1.35fr) minmax(275px,.85fr)!important;gap:14px!important}}
@@ -610,7 +626,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
       }).slice(0,discardCount);
       const discarded = new Set(discardedEntries.map(row=>Number(row.round_number)));
       const bonusTotal=entries.reduce((sum,row)=>sum+(Number(row.bonus_points)||0),0);
-      const finalPoints = entries.reduce((sum,row)=>sum+scoreOf(row),0)+bonusTotal-discardedEntries.reduce((sum,row)=>sum+scoreOf(row),0);
+      const finalPoints = entries.reduce((sum,row)=>sum+scoreOf(row),0)+bonusTotal-discardedEntries.reduce((sum,row)=>sum+(Number(row.race_points)||0),0);
       const team = publicState.teams.find(item => item.id === pilot.default_team_id);
       const podiums = entries.filter(row => row.result_status === 'finished' && Number(row.finish_position) <= 5).length;
       return { ...pilot, stats, teamName: team?.name || 'Sem equipe', byRound, discarded, podiums, wins: Number(stats.wins) || 0, finalPoints };
@@ -628,7 +644,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
       }).join('');
       const bonus=Number(pilot.stats.bonus_points)||0, penalty=Number(pilot.stats.penalty_points)||0;
       const discardValues=[...pilot.discarded].map(Number).map(round=>{
-        const entry=pilot.byRound.get(round);return entry ? (Number(entry.race_points)-Number(entry.penalty_points||0)) : 0;
+        const entry=pilot.byRound.get(round);return entry ? (Number(entry.race_points)||0) : 0;
       }).sort((a,b)=>a-b);
       const penaltyDisplay=penalty?`−${penalty}`:'0';
       const ledger=`Bônus +${bonus} · Advertências ${penaltyDisplay} pts · Descartes ${discardValues[0] ?? '—'} / ${discardValues[1] ?? '—'}`;
@@ -640,37 +656,32 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
   }
   function renderLiveTeams() {
     const root=document.querySelector('#teams');if(!root)return;
-    if(!root.dataset.teamToggleBound){
-      root.addEventListener('click',event=>{
-        const button=event.target.closest('[data-team-toggle]');if(!button||!root.contains(button))return;
-        const panel=button.parentElement.querySelector('.team-details-content');if(!panel)return;
-        const expanded=button.getAttribute('aria-expanded')!=='true';
-        button.setAttribute('aria-expanded',String(expanded));panel.hidden=!expanded;
-        const mark=button.querySelector('.team-toggle-mark');if(mark)mark.textContent=expanded?'−':'+';
-      });
-      root.dataset.teamToggleBound='true';
-    }
     const races=publicState.races.filter(r=>r.status==='completed'&&r.results_published);
+    const raceIds=new Set(races.map(r=>r.id));
+    const pilotById=new Map(publicState.pilots.map(pilot=>[pilot.id,pilot]));
     const driversByTeam=new Map();
     publicState.stagePoints.forEach(row=>{
-      if(!row.team_id||!races.some(r=>r.id===row.race_id))return;
-      const key=`${row.team_id}:${row.race_id}`;
+      if(!raceIds.has(row.race_id))return;
+      const teamId=row.team_id||pilotById.get(row.pilot_id)?.default_team_id;
+      if(!teamId)return;
+      const key=`${teamId}:${row.race_id}`;
       if(!driversByTeam.has(key))driversByTeam.set(key,[]);
-      driversByTeam.get(key).push(row);
+      driversByTeam.get(key).push({...row,team_id:teamId});
     });
     const scores=new Map(publicState.teams.map(team=>[team.id,{team,total:0,rounds:new Map(),pilots:new Map(),pilotScores:new Map()}]));
     driversByTeam.forEach((drivers,key)=>{
       const [teamId,raceId]=key.split(':');const team=scores.get(teamId);if(!team)return;
       const round=Number(publicState.races.find(r=>r.id===raceId)?.round_number);if(!round)return;
-      const counted=drivers.sort((a,b)=>(Number(b.race_points)||0)-(Number(a.race_points)||0)||(Number(a.finish_position)||999)-(Number(b.finish_position)||999)||String(a.pilot_id).localeCompare(String(b.pilot_id))).slice(0,2);
-      const netPoints=item=>(Number(item.race_points)||0)+(Number(item.bonus_points)||0)-(Number(item.penalty_points)||0);
+      const positionOf=item=>{const position=Number(item.finish_position);return item.finish_position==null||!Number.isFinite(position)||position<1?Number.POSITIVE_INFINITY:position};
+      const counted=[...drivers].sort((a,b)=>positionOf(a)-positionOf(b)||(Number(b.race_points)||0)-(Number(a.race_points)||0)||String(a.pilot_id).localeCompare(String(b.pilot_id))).slice(0,2);
+      const netPoints=item=>(Number(item.race_points)||0)-(Number(item.penalty_points)||0);
       const points=counted.reduce((sum,item)=>sum+netPoints(item),0);team.total+=points;team.rounds.set(round,{points,drivers:counted});
       drivers.forEach(item=>{
         const pilot=publicState.pilots.find(p=>p.id===item.pilot_id);if(!pilot)return;
         team.pilots.set(pilot.id,pilot);
         if(!team.pilotScores.has(pilot.id))team.pilotScores.set(pilot.id,{pilot,rounds:new Map(),total:0});
-        const pilotScore=team.pilotScores.get(pilot.id),net=netPoints(item);
-        pilotScore.rounds.set(round,item);pilotScore.total+=net;
+        const pilotScore=team.pilotScores.get(pilot.id);
+        pilotScore.rounds.set(round,item);pilotScore.total+=netPoints(item);
       });
     });
     const ranked=[...scores.values()].sort((a,b)=>b.total-a.total||a.team.name.localeCompare(b.team.name,'pt-BR'));
@@ -682,16 +693,32 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
       const pilotRows=[...entry.pilotScores.values()].sort((a,b)=>a.pilot.display_name.localeCompare(b.pilot.display_name,'pt-BR')).map(({pilot,rounds,total})=>{
         const cells=Array.from({length:11},(_,i)=>{
           const item=rounds.get(i+1);if(!item)return '<td>—</td>';
-          const net=(Number(item.race_points)||0)+(Number(item.bonus_points)||0)-(Number(item.penalty_points)||0);
-          const warning=Number(item.penalty_points)>0?'<span class="penalty-mark" title="Advertência: pontuação reduzida" aria-label="Recebeu advertência">!</span>':'';
+          const net=(Number(item.race_points)||0)-(Number(item.penalty_points)||0);
+          const warning=Number(item.penalty_points)>0?'<span class="penalty-mark" title="Advertência: pontuação líquida reduzida" aria-label="Recebeu advertência">!</span>':'';
           return `<td>${net}${warning}</td>`;
         }).join('');
         return `<tr><th scope="row"><span class="team-score-pilot">${avatarMarkup(pilot)}${html(pilot.display_name)}</span></th>${cells}<td><strong>${total}</strong></td></tr>`;
       }).join('');
       const teamCells=Array.from({length:11},(_,i)=>{const score=entry.rounds.get(i+1);return `<td>${score?score.points: '—'}</td>`;}).join('');
       const scoresTable=`<div class="team-score-table-wrap"><table class="team-score-table"><thead><tr><th scope="col">Piloto</th>${stageHeaders}<th scope="col">Total piloto</th></tr></thead><tbody>${pilotRows}<tr class="team-score-total"><th scope="row">Total da equipe (2 melhores)</th>${teamCells}<td>${entry.total}</td></tr></tbody></table></div>`;
-      return `<div class="teamrow"><b class="team-position">${index+1}º</b><div class="team-details"><button type="button" class="team-toggle" data-team-toggle aria-expanded="false"><span>${html(entry.team.name)}</span><span class="team-toggle-mark" aria-hidden="true">+</span></button><div class="team-details-content" hidden><div class="team-member-strip">${memberStrip}</div>${scoresTable}</div></div><strong class="points">${entry.total}</strong></div>`;
+      const expanded=expandedTeamIds.has(entry.team.id);
+      return `<div class="teamrow"><b class="team-position">${index+1}º</b><div class="team-details"><button type="button" class="team-toggle" data-team-toggle="${html(entry.team.id)}" aria-controls="team-score-${index}" aria-expanded="${expanded}"><span>${html(entry.team.name)}</span><span class="team-toggle-mark" aria-hidden="true">${expanded?'−':'+'}</span></button><div class="team-details-content" id="team-score-${index}"${expanded?'':' hidden'}><div class="team-member-strip">${memberStrip}</div>${scoresTable}</div></div><strong class="points">${entry.total}</strong></div>`;
     }).join(''));
+    const liveTeamIds=new Set(ranked.map(entry=>entry.team.id));
+    [...expandedTeamIds].forEach(id=>{if(!liveTeamIds.has(id))expandedTeamIds.delete(id);});
+    root.querySelectorAll('[data-team-toggle]').forEach(button=>{
+      if(boundTeamButtons.has(button))return;
+      boundTeamButtons.add(button);
+      button.addEventListener('click',()=>{
+        const teamId=button.dataset.teamToggle;
+        const expanded=!expandedTeamIds.has(teamId);
+        if(expanded)expandedTeamIds.add(teamId);else expandedTeamIds.delete(teamId);
+        button.setAttribute('aria-expanded',String(expanded));
+        const panel=document.getElementById(button.getAttribute('aria-controls'));
+        if(panel)panel.hidden=!expanded;
+        const mark=button.querySelector('.team-toggle-mark');if(mark)mark.textContent=expanded?'−':'+';
+      });
+    });
   }
   function renderLivePilots() {
     const root=document.querySelector('#pilotcards');if(!root)return;
@@ -704,7 +731,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
       const discardCount=Math.min(2,Math.max(0,races.length-1));
       const positionForDiscard=row=>{const position=Number(row.finish_position);return row.finish_position==null||!Number.isFinite(position)||position<1?Number.POSITIVE_INFINITY:position};
       const discarded=[...points].sort((a,b)=>{const byWorstPosition=positionForDiscard(b)-positionForDiscard(a);return Number.isNaN(byWorstPosition)||byWorstPosition===0?Number(a.round_number)-Number(b.round_number):byWorstPosition}).slice(0,discardCount);
-      const total=points.reduce((sum,row)=>sum+scoreOf(row),0)+points.reduce((sum,row)=>sum+(Number(row.bonus_points)||0),0)-discarded.reduce((sum,row)=>sum+scoreOf(row),0);
+      const total=points.reduce((sum,row)=>sum+scoreOf(row),0)+points.reduce((sum,row)=>sum+(Number(row.bonus_points)||0),0)-discarded.reduce((sum,row)=>sum+(Number(row.race_points)||0),0);
       return {...pilot,stats,points:total,wins:Number(stats.wins)||0,podiums:points.filter(row=>row.result_status==='finished'&&Number(row.finish_position)<=5).length,starts:Number(stats.starts)||0};
     }).sort((a,b)=>b.points-a.points||a.pilot_number-b.pilot_number);
     replaceHTML(root,`<div class="pilot-grid">${ordered.map(p=>`<article class="pilot-card" data-pilot-id="${html(p.id)}">${avatarMarkup(p)}<h3>${html(p.display_name)}</h3><span class="team">${html(publicState.teams.find(t=>t.id===p.default_team_id)?.name||'Sem equipe')}</span><div class="pilot-detail-stats"><div><b>${p.points}</b><span>Pontos</span></div><div><b>${p.wins}</b><span>Vitórias</span></div><div><b>${p.podiums}</b><span>Pódios</span></div><div><b>${p.starts}</b><span>Etapas</span></div></div></article>`).join('')}</div>`);
@@ -813,7 +840,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
   function renderEditor(which) {
     const host=adminBox.querySelector('#cka-editor'); if(!host)return;
     const raceOpts=options(state.races,r=>`Etapa ${r.round_number} · ${r.venue}`), pilotOpts=options(state.pilots.filter(p=>p.is_active),p=>`${p.pilot_number} · ${p.display_name}`), teamOpts='<option value="">Sem equipe / não definida</option>'+options(state.teams,t=>t.name);
-    if(which==='race') host.innerHTML=`<h3>Lançamento de resultados por etapa</h3><p class="cka-muted">Digite apenas números nos campos de melhor volta e diferença; o formato é aplicado automaticamente ao sair do campo. O rascunho fica salvo neste navegador enquanto você preenche. A camisa CKA aplica +5 pontos; cada advertência desconta automaticamente 3 pontos, inclusive no cálculo dos descartes.</p><form id="cka-result"><div class="cka-result-toolbar"><label>Etapa<select name="race_id" required><option value="">Selecione uma etapa</option>${raceOpts}</select></label><label>Piloto para adicionar<select name="add_pilot_id"><option value="">Selecione um piloto</option>${pilotOpts}</select></label><button class="cka-action" type="button" data-add-pilot>Adicionar piloto</button></div><div class="cka-result-scroll"><table class="cka-result-table"><thead><tr><th>Piloto</th><th>Equipe na etapa</th><th>Situação</th><th>Posição</th><th>Melhor volta</th><th>Diferença para o 1º</th><th>Camisa CKA (+5)</th><th>Advertência (−3)</th><th></th></tr></thead><tbody data-result-rows><tr><td class="cka-result-empty" colspan="9">Selecione uma etapa para carregar os resultados já cadastrados.</td></tr></tbody></table></div><div class="cka-result-actions"><label style="display:flex;align-items:center;gap:8px;color:#b7c4d8"><input name="publish" type="checkbox"> Publicar etapa após salvar — atualiza resultados e pontuação no site</label><button class="cka-action primary" type="submit">Salvar resultados da etapa</button></div></form>`;
+    if(which==='race') host.innerHTML=`<h3>Lançamento de resultados por etapa</h3><p class="cka-muted">Digite apenas números nos campos de melhor volta e diferença; o formato é aplicado automaticamente ao sair do campo. O rascunho fica salvo neste navegador enquanto você preenche. A camisa CKA aplica +5 pontos; cada advertência desconta automaticamente 3 pontos. O descarte escolhe as duas piores posições, e o valor descontado é a pontuação bruta de colocação, antes da penalidade.</p><form id="cka-result"><div class="cka-result-toolbar"><label>Etapa<select name="race_id" required><option value="">Selecione uma etapa</option>${raceOpts}</select></label><label>Piloto para adicionar<select name="add_pilot_id"><option value="">Selecione um piloto</option>${pilotOpts}</select></label><button class="cka-action" type="button" data-add-pilot>Adicionar piloto</button></div><div class="cka-result-scroll"><table class="cka-result-table"><thead><tr><th>Piloto</th><th>Equipe na etapa</th><th>Situação</th><th>Posição</th><th>Melhor volta</th><th>Diferença para o 1º</th><th>Camisa CKA (+5)</th><th>Advertência (−3)</th><th></th></tr></thead><tbody data-result-rows><tr><td class="cka-result-empty" colspan="9">Selecione uma etapa para carregar os resultados já cadastrados.</td></tr></tbody></table></div><div class="cka-result-actions"><label style="display:flex;align-items:center;gap:8px;color:#b7c4d8"><input name="publish" type="checkbox"> Publicar etapa após salvar — atualiza resultados e pontuação no site</label><button class="cka-action primary" type="submit">Salvar resultados da etapa</button></div></form>`;
     if(which==='schedule') host.innerHTML=`<h3>Editar etapa</h3><form class="cka-form" id="cka-schedule">${field('Etapa','race_id','select',{required:true,options:raceOpts})}${field('Data','race_date','date',{required:true})}${field('Horário','start_time','time',{required:true})}${field('Kartódromo','venue','text',{required:true})}${field('Localidade','location','text',{required:true})}<button class="cka-action primary">Salvar etapa</button></form>`;
     if(which==='team') host.innerHTML=`<h3>Vincular piloto a uma equipe padrão</h3><form class="cka-form" id="cka-team">${field('Piloto','pilot_id','select',{required:true,options:pilotOpts})}${field('Equipe','team_id','select',{options:teamOpts})}<button class="cka-action primary">Salvar equipe</button></form>`;
     if(which==='pilots') {
