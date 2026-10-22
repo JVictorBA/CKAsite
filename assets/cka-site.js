@@ -27,7 +27,7 @@ try {
     });
   };
   const db = createClient(config.url, config.publishableKey, { global: { fetch: fetchWithTimeout } });
-  const publicState = { races: [], pilots: [], teams: [], stagePoints: [], standings: [], results: [], ready: false, error: null };
+  const publicState = { races: [], pilots: [], teams: [], stagePoints: [], standings: [], results: [], grid: [], ready: false, error: null };
   const expandedTeamIds = new Set();
   const boundTeamButtons = new WeakSet();
   function showPublicSyncNotice(message) {
@@ -330,6 +330,7 @@ try {
     .cka-insight-title{display:flex;flex-direction:column;gap:3px;margin-bottom:8px}
     .cka-insight-title .cka-widget-kicker{color:var(--text-muted)!important;font-size:9px!important}
     .cka-insight-title>strong{color:#fff;font-size:14px}
+    .cka-grid-section{padding-bottom:0;border-bottom:0}.cka-grid-section .cka-grid-open{display:block;margin:8px 0 0 auto}.cka-grid-section .cka-start-grid{margin:0}
     .cka-wins-row{display:grid;grid-template-columns:28px minmax(0,1fr) auto;gap:8px;align-items:center;min-height:43px;border-bottom:1px solid rgba(255,255,255,.055)}
     .cka-wins-row:last-child{border-bottom:0}
     .cka-wins-rank{color:var(--text-muted);font-size:11px;font-weight:800}
@@ -346,6 +347,16 @@ try {
     .cka-next-date{grid-row:2/4;color:#fff;font-size:24px;letter-spacing:-.04em}
     .cka-next-venue{overflow:hidden;color:#fff;font-size:12px;text-overflow:ellipsis;white-space:nowrap}
     .cka-next-details{overflow:hidden;color:var(--text-muted);font-size:10px;text-overflow:ellipsis;white-space:nowrap}
+    .cka-start-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px 12px;max-height:190px;overflow:auto;padding-right:3px}
+    .cka-start-grid-row{display:grid;grid-template-columns:24px minmax(0,1fr);gap:6px;align-items:center;min-height:30px;border-bottom:1px solid rgba(255,255,255,.05)}
+    .cka-start-grid-pos{color:var(--gold);font-size:10px;font-weight:900}.cka-start-grid-name{overflow:hidden;color:var(--text-primary);font-size:10px;font-weight:650;text-overflow:ellipsis;white-space:nowrap}
+    .cka-grid-hero{position:relative;overflow:hidden;margin:0 0 18px;padding:26px;border:1px solid rgba(212,175,55,.2);border-radius:14px;background:radial-gradient(ellipse at 100% 0,rgba(212,175,55,.12),transparent 40%),linear-gradient(135deg,#171c24,#10141b)}
+    .cka-grid-hero:after{position:absolute;top:12px;right:20px;color:rgba(212,175,55,.1);font-size:88px;font-weight:950;line-height:1;content:'P1';pointer-events:none}
+    .cka-grid-hero>*{position:relative;z-index:1}.cka-grid-kicker{color:var(--gold);font-size:10px;font-weight:850;letter-spacing:.16em;text-transform:uppercase}.cka-grid-hero h3{margin:7px 0;font-size:clamp(22px,3vw,34px);letter-spacing:-.035em}.cka-grid-meta{margin:0;color:var(--text-muted);font-size:13px}
+    .cka-grid-public{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}.cka-grid-pilot{display:grid;grid-template-columns:42px 42px minmax(0,1fr);gap:10px;align-items:center;min-height:66px;padding:9px 12px;border:1px solid var(--border);border-radius:10px;background:var(--surface)}.cka-grid-pilot:nth-child(-n+3){border-color:rgba(212,175,55,.24);background:linear-gradient(110deg,rgba(212,175,55,.065),var(--surface) 48%)}.cka-grid-pilot .avatar,.cka-grid-pilot .placeholder{width:38px;height:38px;min-width:38px}.cka-grid-pilot-pos{color:var(--gold);font-size:16px;font-weight:950}.cka-grid-pilot-name{overflow:hidden;color:var(--text-primary);font-size:13px;font-weight:750;text-overflow:ellipsis;white-space:nowrap}
+    .cka-position-change{display:inline-flex;align-items:center;margin-left:7px;padding:3px 7px;border-radius:999px;font-size:11px;font-weight:900;vertical-align:2px}.cka-position-gain{background:rgba(34,197,94,.13);color:#4ade80}.cka-position-loss{background:rgba(239,68,68,.13);color:#f87171}.cka-position-same{background:rgba(148,163,184,.12);color:#aab4c2}
+    .cka-rank-move{display:inline-flex;align-items:center;justify-content:center;margin-left:5px;padding:2px 5px;border-radius:999px;font-size:9px;font-weight:900;vertical-align:2px}.cka-news-section{padding:12px 0 14px;border-bottom:1px solid var(--border)}.cka-news-card{padding:11px;border:1px solid rgba(212,175,55,.2);border-radius:9px;background:linear-gradient(130deg,rgba(212,175,55,.055),rgba(255,255,255,.025))}.cka-news-label{color:var(--gold);font-size:9px;font-weight:850;letter-spacing:.12em;text-transform:uppercase}.cka-news-card h3{margin:5px 0;color:#fff;font-size:13px;line-height:1.35}.cka-news-card p{margin:5px 0 0;color:var(--text-muted);font-size:10px;line-height:1.5}.cka-news-facts{display:grid;gap:5px;margin-top:9px}.cka-news-fact{display:flex;gap:7px;color:var(--text-primary);font-size:10px;line-height:1.4}.cka-news-fact:before{content:'•';color:var(--gold);font-weight:900}.cka-news-form textarea{min-height:105px;width:100%;padding:10px;border:1px solid #344962;border-radius:8px;background:#0b1421;color:#f5f7fb;font:inherit;resize:vertical}
+    .cka-grid-edit-table{width:100%;min-width:460px;border-collapse:collapse}.cka-grid-edit-table th,.cka-grid-edit-table td{padding:8px;border-bottom:1px solid var(--border);text-align:left}.cka-grid-edit-table th{color:var(--text-muted);font-size:10px;text-transform:uppercase}.cka-grid-edit-table input{width:80px;max-width:100%;padding:8px;border:1px solid var(--border);border-radius:7px;background:#0b1018;color:var(--text-primary);font:inherit}
     #pilotcards.pilotcards{display:block!important;width:100%!important;min-width:0!important;overflow:visible!important;border:0!important;border-radius:0!important;background:transparent!important}
     #pilotcards .pilot-grid{display:grid!important;width:100%!important;grid-template-columns:repeat(auto-fill,minmax(min(100%,205px),1fr))!important;gap:16px!important}
     #pilotcards .pilot-card{display:flex!important;min-width:0!important;min-height:0!important;flex-direction:column!important;align-items:stretch!important;overflow:hidden!important;padding:10px!important;border:1px solid var(--border)!important;border-radius:10px!important;background:var(--surface)!important;box-shadow:none!important;backdrop-filter:none!important;cursor:pointer;transition:background .16s,border-color .16s!important}
@@ -431,6 +442,13 @@ try {
       #classificacao .scroll{touch-action:pan-y!important;-webkit-overflow-scrolling:touch}
       .wrap{width:calc(100% - 20px)!important}
       #classificacao .scroll{position:static!important;max-height:none!important;overflow:visible!important;border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important}
+      #classificacao #classification.table{display:block!important;width:100%!important;min-width:0!important;max-width:100%!important;overflow:visible!important}
+      #classificacao #classification .row.headrow,#classificacao #classification .row:not(.headrow){display:grid!important;box-sizing:border-box!important;width:100%!important;min-width:0!important;max-width:100%!important;grid-template-columns:34px minmax(0,1fr) 58px!important;column-gap:8px!important}
+      #classificacao #classification .row:not(.headrow)>.pos{grid-column:1!important;grid-row:1!important;justify-self:start!important}
+      #classificacao #classification .row:not(.headrow)>.pilot{grid-column:2!important;grid-row:1!important;display:flex!important;width:100%!important;min-width:0!important;max-width:100%!important;overflow:hidden!important;align-items:center!important}
+      #classificacao #classification .row:not(.headrow)>.pilot>span{display:block!important;flex:1 1 auto!important;width:1px!important;min-width:0!important;max-width:100%!important;overflow:hidden!important}
+      #classificacao #classification .row:not(.headrow)>.pilot strong{display:block!important;width:100%!important;max-width:100%!important}
+      #classificacao #classification .row:not(.headrow)>b.points{grid-column:3!important;grid-row:1!important;justify-self:end!important;display:block!important;width:100%!important;min-width:0!important;max-width:100%!important;visibility:visible!important;opacity:1!important;text-align:right!important;color:#f3d36d!important;font-size:16px!important;font-weight:900!important}
       #classification.table{width:100%!important;min-width:0!important}
       #classification .row.headrow,#classification .row:not(.headrow){display:grid!important;width:100%!important;min-width:0!important;grid-template-columns:38px minmax(0,1fr) 64px!important;gap:8px!important;align-items:center!important}
       #classification .row.headrow{min-height:40px!important;padding:8px 10px!important;background:rgba(255,255,255,.035)!important}
@@ -446,7 +464,7 @@ try {
       #classification .row:not(.headrow)>.pilot small:not(.pilot-ledger){display:none!important}
       #classification .row:not(.headrow)>.pilot .pilot-ledger{display:block!important;max-width:100%!important;margin-top:3px!important;color:var(--text-muted)!important;font-size:9px!important;line-height:1.3!important;white-space:normal!important}
       #classification .row:not(.headrow)>.pilot .avatar,#classification .row:not(.headrow)>.pilot .placeholder{width:38px!important;height:38px!important;min-width:38px!important;flex:0 0 38px!important}
-      #classification .row:not(.headrow)>.points{font-size:16px!important;text-align:right!important}
+      #classification .row:not(.headrow)>b.points{display:block!important;visibility:visible!important;opacity:1!important;position:static!important;grid-column:3!important;grid-row:1!important;align-self:center!important;z-index:2!important;color:#f3d36d!important;font-size:16px!important;font-weight:900!important;text-align:right!important}
       #classification .row.headrow>:first-child{grid-column:1!important}
       #classification .row.headrow>:nth-child(2){grid-column:2!important}
       #classification .row.headrow>:nth-child(4){grid-column:3!important;text-align:right!important}
@@ -502,7 +520,7 @@ try {
     const layout=document.createElement('div');layout.className='cka-home-layout';
     hero.before(layout);layout.append(hero);
     const widget=document.createElement('aside');widget.className='cka-standings-widget';widget.setAttribute('aria-label','Informações e destaques do campeonato');
-    widget.innerHTML='<div class="cka-widget-head"><div><div class="cka-widget-kicker">Em números · CKA</div><h2>Fatos da temporada</h2></div></div><section class="cka-insight-section"><div class="cka-insight-title"><span class="cka-widget-kicker">Pilotos em destaque</span><strong>Mais vitórias</strong></div><div class="cka-most-wins-list"><div class="cka-standings-empty">Calculando os destaques…</div></div></section><section class="cka-insight-section cka-next-section"><div class="cka-insight-title"><span class="cka-widget-kicker">Calendário</span><strong>Próxima etapa</strong></div><div class="cka-next-race"><div class="cka-standings-empty">Carregando calendário…</div></div></section>';
+    widget.innerHTML='<div class="cka-widget-head"><div><div class="cka-widget-kicker">Em números · CKA</div><h2>Fatos da temporada</h2></div></div><section class="cka-news-section"><div class="cka-insight-title"><span class="cka-widget-kicker">Paddock CKA</span><strong>Notícias da etapa</strong></div><div class="cka-news-content"><div class="cka-standings-empty">Aguardando resultados oficiais…</div></div></section><section class="cka-insight-section"><div class="cka-insight-title"><span class="cka-widget-kicker">Pilotos em destaque</span><strong>Mais vitórias</strong></div><div class="cka-most-wins-list"><div class="cka-standings-empty">Calculando os destaques…</div></div></section><section class="cka-insight-section cka-next-section"><div class="cka-insight-title"><span class="cka-widget-kicker">Calendário</span><strong>Próxima etapa</strong></div><div class="cka-next-race"><div class="cka-standings-empty">Carregando calendário…</div></div></section><section class="cka-insight-section cka-grid-section"><div class="cka-insight-title"><span class="cka-widget-kicker">Ordem de largada</span><strong>Grid da próxima etapa</strong></div><div class="cka-start-grid"><div class="cka-standings-empty">Carregando o grid…</div></div><button type="button" class="cka-widget-link cka-grid-open">Ver grid completo →</button></section>';
     layout.append(widget);
     const syncWins=()=>{
       const list=widget.querySelector('.cka-most-wins-list');
@@ -535,10 +553,15 @@ try {
     };
     const loadNextRace=async()=>{
       const today=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Sao_Paulo'}).format(new Date());
-      const {data,error}=await db.from('cka_races').select('round_number,race_date,start_time,venue,location,status').eq('is_published',true).eq('status','scheduled').gte('race_date',today).order('race_date',{ascending:true}).limit(1).maybeSingle();
-      if(error){widget.querySelector('.cka-next-race').textContent='Não foi possível carregar a próxima etapa.';return;}
+      const {data,error}=await db.from('cka_races').select('id,round_number,race_date,start_time,venue,location,status').eq('is_published',true).eq('status','scheduled').gte('race_date',today).order('race_date',{ascending:true}).limit(1).maybeSingle();
+      if(error){widget.querySelector('.cka-next-race').textContent='Não foi possível carregar a próxima etapa.';widget.querySelector('.cka-start-grid').textContent='Não foi possível carregar o grid.';return;}
       renderNextRace(data);
+      const box=widget.querySelector('.cka-start-grid');box.replaceChildren();
+      const rows=data?publicState.grid.filter(row=>row.race_id===data.id).sort((a,b)=>a.starting_position-b.starting_position):[];
+      if(!rows.length){const empty=document.createElement('div');empty.className='cka-standings-empty';empty.textContent='Grid ainda não publicado.';box.append(empty);return;}
+      box.innerHTML=rows.slice(0,6).map(row=>{const pilot=publicState.pilots.find(item=>item.id===row.pilot_id);return `<div class="cka-start-grid-row"><b class="cka-start-grid-pos">P${row.starting_position}</b><span class="cka-start-grid-name">${html(pilot?.display_name||'Piloto')}</span></div>`;}).join('');
     };
+    widget.querySelector('.cka-grid-open').addEventListener('click',()=>document.querySelector('.tab[data-panel="cka-grid"]')?.click());
     window.addEventListener('cka:public-data-updated',loadNextRace);
     syncWins();loadNextRace();
     const standings=document.querySelector('#classification');
@@ -559,15 +582,17 @@ try {
     document.querySelectorAll('.tabs .tab').forEach(b => b.classList.toggle('active', b.dataset.panel === id));
     document.querySelectorAll('main .panel').forEach(s => s.classList.toggle('active', s.id === id));
     if (id === 'cka-calendario') loadCalendar();
+    if (id === 'cka-grid') renderPublicGrid();
     if (id === 'cka-fotos') loadMedia('photo');
     if (id === 'cka-videos') loadMedia('youtube');
     if (id === 'cka-admin') renderAdmin();
   }
   const calendarBox = makePanel('cka-calendario', 'Calendário de etapas', 'Toque em uma etapa para ver o vencedor.');
+  const gridBox = makePanel('cka-grid', 'Formação do grid', 'Posições de largada da próxima etapa publicada.');
   const photosBox = makePanel('cka-fotos', 'Fotos das etapas', 'Galeria oficial do campeonato.');
   const videosBox = makePanel('cka-videos', 'Vídeos dos pilotos', 'Vídeos publicados no YouTube.');
   const adminBox = makePanel('cka-admin', 'Administração CKA', 'Acesso restrito ao administrador.');
-  makeTab('cka-calendario', 'Calendário'); makeTab('cka-fotos', 'Fotos'); makeTab('cka-videos', 'Vídeos'); makeTab('cka-admin', 'Admin');
+  makeTab('cka-grid', 'Grid'); makeTab('cka-calendario', 'Calendário'); makeTab('cka-fotos', 'Fotos'); makeTab('cka-videos', 'Vídeos'); makeTab('cka-admin', 'Admin');
   const state = { admin: false, user: null, races: [], pilots: [], teams: [], initialized: false, editingPilotId: null };
   const photoLightbox=document.createElement('dialog');
   photoLightbox.className='cka-photo-lightbox';
@@ -607,15 +632,16 @@ try {
   }
   async function loadPublicData() {
     try {
-    const [seasonResult, raceResult, pointsResult, standingsResult, pilotsResult, teamsResult] = await Promise.all([
+    const [seasonResult, raceResult, pointsResult, standingsResult, pilotsResult, teamsResult, gridResult] = await Promise.all([
       db.from('cka_seasons').select('id,season_year').eq('is_active', true).maybeSingle(),
-      db.from('cka_races').select('id,season_id,round_number,race_date,start_time,venue,location,status,is_published,results_published').eq('is_published', true).order('round_number'),
+      db.from('cka_races').select('id,season_id,round_number,race_date,start_time,venue,location,status,is_published,results_published,notes').eq('is_published', true).order('round_number'),
       db.from('cka_pilot_stage_points').select('*').order('round_number').order('pilot_id'),
       db.from('cka_pilot_standings').select('*').order('pilot_id'),
       db.from('cka_pilots').select('id,season_id,pilot_number,full_name,display_name,default_team_id,photo_path,is_active').eq('is_active', true).order('pilot_number'),
-      db.from('cka_teams').select('id,season_id,name,is_active').eq('is_active', true).order('name')
+      db.from('cka_teams').select('id,season_id,name,is_active').eq('is_active', true).order('name'),
+      db.from('cka_race_grid').select('race_id,pilot_id,starting_position,is_published').eq('is_published',true).order('starting_position')
     ]);
-    const failed = [seasonResult, raceResult, pointsResult, standingsResult, pilotsResult, teamsResult].find(result => result.error);
+    const failed = [seasonResult, raceResult, pointsResult, standingsResult, pilotsResult, teamsResult, gridResult].find(result => result.error);
     if (failed) { publicState.error = failed.error; console.warn('CKA: falha ao sincronizar os dados públicos.', failed.error); showPublicSyncNotice(`Falha ao sincronizar os dados do campeonato: ${failed.error.message||'erro de conexão'}. Os dados exibidos podem estar desatualizados.`); return false; }
     const activeSeasonId=seasonResult.data?.id;
     if(!activeSeasonId){publicState.error=new Error('Não há temporada ativa configurada.');showPublicSyncNotice('Nenhuma temporada ativa está configurada no Supabase.');return false;}
@@ -633,20 +659,23 @@ try {
       standings:(standingsResult.data||[]).filter(row=>row.season_id===activeSeasonId),
       pilots:(pilotsResult.data||[]).filter(row=>row.season_id===activeSeasonId),
       teams:(teamsResult.data||[]).filter(row=>row.season_id===activeSeasonId),
-      results
+      results,
+      grid:(gridResult.data||[]).filter(row=>races.some(race=>race.id===row.race_id))
     };
-    const snapshot=JSON.stringify([activeSeasonId,nextState.races,nextState.stagePoints,nextState.standings,nextState.pilots,nextState.teams,nextState.results]);
+    const snapshot=JSON.stringify([activeSeasonId,nextState.races,nextState.stagePoints,nextState.standings,nextState.pilots,nextState.teams,nextState.results,nextState.grid]);
     const unchanged=publicState.ready&&publicState.snapshot===snapshot;
     Object.assign(publicState,nextState,{snapshot});
     publicState.ready = true;
     publicState.error = null;
     window.ckaMarkLiveDataReady?.();
     clearPublicSyncNotice();
-    if(unchanged)return true;
+    if(unchanged){renderPublicGrid();renderHomeNews();return true;}
     renderLiveStandings();
     renderLiveTeams();
     renderLivePilots();
     renderLiveResults();
+    renderPublicGrid();
+    renderHomeNews();
     syncLiveSeasonFacts();
     window.dispatchEvent(new CustomEvent('cka:public-data-updated'));
     return true;
@@ -656,6 +685,18 @@ try {
       showPublicSyncNotice(`A sincronização não foi concluída: ${error.message||'verifique sua conexão com o Supabase'}.`);
       return false;
     }
+  }
+  function rankingForRaces(races){
+    if(!races.length)return [];
+    const raceIds=new Set(races.map(race=>race.id)),dropCount=Math.min(2,Math.max(0,races.length-1));
+    const rank=publicState.pilots.map(pilot=>{
+      const entries=publicState.stagePoints.filter(row=>row.pilot_id===pilot.id&&raceIds.has(row.race_id));
+      const worstPosition=row=>row.finish_position==null?Number.POSITIVE_INFINITY:Number(row.finish_position);
+      const dropped=[...entries].sort((a,b)=>worstPosition(b)-worstPosition(a)||Number(a.round_number)-Number(b.round_number)).slice(0,dropCount);
+      const total=entries.reduce((sum,row)=>sum+(Number(row.race_points)||0)+(Number(row.bonus_points)||0)-(Number(row.penalty_points)||0),0)-dropped.reduce((sum,row)=>sum+(Number(row.race_points)||0),0);
+      return {id:pilot.id,pilot_number:pilot.pilot_number,finalPoints:total};
+    }).sort((a,b)=>b.finalPoints-a.finalPoints||a.pilot_number-b.pilot_number);
+    return rank;
   }
   function renderLiveStandings() {
     const root = document.querySelector('#classification'); if (!root) return;
@@ -682,7 +723,8 @@ try {
       const podiums = entries.filter(row => row.result_status === 'finished' && Number(row.finish_position) <= 5).length;
       return { ...pilot, stats, teamName: team?.name || 'Sem equipe', byRound, discarded, podiums, wins: Number(stats.wins) || 0, finalPoints };
     }).sort((a,b) => b.finalPoints - a.finalPoints || a.pilot_number - b.pilot_number);
-    const heading = ['Pos.','Piloto','Equipe','Pontos',...Array.from({length:11},(_,i)=>`Etapa ${i+1}`),'Bônus','Pontos perdidos','Descarte 1','Descarte 2'];
+    const previousRaces=races.slice(0,-1),previousRanking=rankingForRaces(previousRaces),previousPlace=new Map(previousRanking.map((pilot,index)=>[pilot.id,index+1]));
+    const heading = ['Pos. / Δ etapa','Piloto','Equipe','Pontos',...Array.from({length:11},(_,i)=>`Etapa ${i+1}`),'Bônus','Pontos perdidos','Descarte 1','Descarte 2'];
     const header = `<div class="row headrow">${heading.map(label=>`<span>${html(label)}</span>`).join('')}</div>`;
     const rows = pilots.map((pilot,index) => {
       const stages = Array.from({length:11},(_,i)=>{
@@ -698,12 +740,14 @@ try {
         const entry=pilot.byRound.get(round);return entry ? (Number(entry.race_points)||0) : 0;
       }).sort((a,b)=>a-b);
       const penaltyDisplay=penalty?`−${penalty}`:'0';
-      const ledger=`Bônus +${bonus} · Advertências ${penaltyDisplay} pts · Descartes ${discardValues[0] ?? '—'} / ${discardValues[1] ?? '—'}`;
-      const row=`<div class="row" data-pilot-id="${html(pilot.id)}"><b class="pos" data-label="Pos.">${index+1}º</b><div class="pilot" data-label="Piloto">${avatarMarkup(pilot)}<span><strong>${html(pilot.display_name)}</strong><small>${index===0?'Líder do campeonato':''}</small><small class="pilot-ledger">${html(ledger)}</small></span></div><span class="team" data-label="Equipe">${html(pilot.teamName)}</span><b class="points" data-label="Pontos">${pilot.finalPoints}</b>${stages}<span class="bonus" data-label="Bônus">+${bonus}</span><span class="penalty-total" data-label="Pontos perdidos">${penaltyDisplay}</span><span class="discard" data-label="Descarte 1">${discardValues[0] ?? '—'}</span><span class="discard" data-label="Descarte 2">${discardValues[1] ?? '—'}</span></div>`;
+      const ledger=`Total ${pilot.finalPoints} pts · Bônus +${bonus} · Advertências ${penaltyDisplay} pts · Descartes ${discardValues[0] ?? '—'} / ${discardValues[1] ?? '—'}`;
+      const oldPlace=previousPlace.get(pilot.id),movement=oldPlace==null?null:oldPlace-(index+1);
+      const movementBadge=movement==null?'':`<span class="cka-rank-move cka-position-change ${movement>0?'cka-position-gain':movement<0?'cka-position-loss':'cka-position-same'}" title="${movement>0?'Subiu':movement<0?'Caiu':'Manteve'} em relação à etapa anterior">${movement>0?'+':''}${movement}</span>`;
+      const row=`<div class="row" data-pilot-id="${html(pilot.id)}"><b class="pos" data-label="Pos.">${index+1}º${movementBadge}</b><div class="pilot" data-label="Piloto">${avatarMarkup(pilot)}<span><strong>${html(pilot.display_name)}</strong><small>${index===0?'Líder do campeonato':''}</small><small class="pilot-ledger">${html(ledger)}</small></span></div><span class="team" data-label="Equipe">${html(pilot.teamName)}</span><b class="points" data-label="Pontos">${pilot.finalPoints}</b>${stages}<span class="bonus" data-label="Bônus">+${bonus}</span><span class="penalty-total" data-label="Pontos perdidos">${penaltyDisplay}</span><span class="discard" data-label="Descarte 1">${discardValues[0] ?? '—'}</span><span class="discard" data-label="Descarte 2">${discardValues[1] ?? '—'}</span></div>`;
       return row;
     }).join('');
     replaceHTML(root,header+rows);
-    const meta=document.querySelector('#classificacao .head>p'); if(meta)meta.textContent=`${pilots.length} pilotos · ${races.length} etapas publicadas`;
+    const meta=document.querySelector('#classificacao .head>p'); if(meta)meta.textContent=`${pilots.length} pilotos · ${races.length} etapas publicadas · Δ = variação vs. etapa anterior`;
   }
   function renderLiveTeams() {
     const root=document.querySelector('#teams');if(!root)return;
@@ -818,7 +862,48 @@ try {
     const race=completed.find(r=>r.round_number===current);
     if(!race){replaceHTML(resultBox,'<p class="cka-muted">Ainda não há resultados publicados.</p>');return;}
     const rows=publicState.results.filter(row=>row.race_id===race.id).sort((a,b)=>(a.finish_position??999)-(b.finish_position??999));
-    replaceHTML(resultBox,'<div class="resultrow"><span>Posição</span><span>Piloto</span><span>Melhor volta</span><span>Diferença</span></div>'+rows.map(row=>{const pilot=publicState.pilots.find(p=>p.id===row.pilot_id)||{display_name:'Piloto'};return `<div class="resultrow"><b>${row.finish_position?`${row.finish_position}º`:'—'}</b><span class="result-pilot">${avatarMarkup(pilot)}<strong>${html(pilot.display_name)}</strong></span><span>${lapText(row.best_lap_ms)}</span><span>${html(row.gap_display||'—')}</span></div>`;}).join(''));
+    replaceHTML(resultBox,'<div class="resultrow"><span>Posição</span><span>Piloto</span><span>Melhor volta</span><span>Diferença</span></div>'+rows.map(row=>{const pilot=publicState.pilots.find(p=>p.id===row.pilot_id)||{display_name:'Piloto'};const start=publicState.grid.find(item=>item.race_id===race.id&&item.pilot_id===row.pilot_id)?.starting_position;const finish=Number(row.finish_position);const delta=Number(start)>0&&finish>0?Number(start)-finish:null;const change=delta==null?'':`<span class="cka-position-change ${delta>0?'cka-position-gain':delta<0?'cka-position-loss':'cka-position-same'}" title="Largou em ${start}º">${delta>0?'+':''}${delta}</span>`;return `<div class="resultrow"><b>${row.finish_position?`${row.finish_position}º`:'—'}${change}</b><span class="result-pilot">${avatarMarkup(pilot)}<strong>${html(pilot.display_name)}</strong></span><span>${lapText(row.best_lap_ms)}</span><span>${html(row.gap_display||'—')}</span></div>`;}).join(''));
+  }
+  function renderPublicGrid(){
+    if(!gridBox)return;
+    const today=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Sao_Paulo'}).format(new Date());
+    const next=publicState.races.filter(race=>race.status==='scheduled'&&race.race_date>=today).sort((a,b)=>a.race_date.localeCompare(b.race_date))[0];
+    const rows=next?publicState.grid.filter(row=>row.race_id===next.id).sort((a,b)=>a.starting_position-b.starting_position):[];
+    if(!next||!rows.length){replaceHTML(gridBox,'<div class="cka-box"><p class="cka-muted">A formação da próxima etapa ainda não foi publicada. Volte em breve.</p></div>');return;}
+    const date=new Date(`${next.race_date}T12:00:00`).toLocaleDateString('pt-BR',{day:'2-digit',month:'long',year:'numeric'});
+    replaceHTML(gridBox,`<section class="cka-grid-hero"><span class="cka-grid-kicker">Etapa ${next.round_number} · Ordem oficial de largada</span><h3>O grid está definido.</h3><p class="cka-grid-meta">${html(date)} · ${html(next.venue)} · ${html(String(next.start_time||'').slice(0,5))} · ${html(next.location)}</p></section><div class="cka-grid-public">${rows.map(row=>{const pilot=publicState.pilots.find(item=>item.id===row.pilot_id);if(!pilot)return '';return `<article class="cka-grid-pilot"><b class="cka-grid-pilot-pos">P${row.starting_position}</b>${avatarMarkup(pilot)}<strong class="cka-grid-pilot-name">${html(pilot.display_name)}</strong></article>`;}).join('')}</div>`);
+  }
+  function renderHomeNews(){
+    const box=document.querySelector('.cka-news-content');if(!box)return;
+    const completed=publicState.races.filter(race=>race.status==='completed'&&race.results_published).sort((a,b)=>Number(a.round_number)-Number(b.round_number));
+    const race=completed.at(-1);if(!race){replaceHTML(box,'<div class="cka-standings-empty">As notícias serão atualizadas após a publicação da primeira etapa.</div>');return;}
+    const results=publicState.results.filter(row=>row.race_id===race.id),points=publicState.stagePoints.filter(row=>row.race_id===race.id),previous=completed.slice(0,-1);
+    const ranked=rankingForRaces(completed),previousRanked=rankingForRaces(previous),leader=ranked[0],oldLeader=previousRanked[0];
+    const leaderPilot=publicState.pilots.find(pilot=>pilot.id===leader?.id),winnerRow=results.find(row=>Number(row.finish_position)===1),winner=publicState.pilots.find(pilot=>pilot.id===winnerRow?.pilot_id);
+    const fastest=results.filter(row=>Number(row.best_lap_ms)>0).sort((a,b)=>Number(a.best_lap_ms)-Number(b.best_lap_ms))[0],fastestPilot=publicState.pilots.find(pilot=>pilot.id===fastest?.pilot_id);
+    const penalties=points.filter(row=>Number(row.penalty_points)>0).map(row=>({pilot:publicState.pilots.find(item=>item.id===row.pilot_id),amount:Number(row.penalty_points)}));
+    const facts=[];
+    if(winner)facts.push(`<span class="cka-news-fact"><span><strong>${html(winner.display_name)}</strong> venceu a etapa ${race.round_number}.</span></span>`);
+    if(fastestPilot)facts.push(`<span class="cka-news-fact"><span>Melhor volta: <strong>${html(fastestPilot.display_name)}</strong> · ${lapText(fastest.best_lap_ms)}.</span></span>`);
+    if(penalties.length)facts.push(`<span class="cka-news-fact"><span>Penalidade(s): ${penalties.map(item=>`${html(item.pilot?.display_name||'Piloto')} (−${item.amount} pts)`).join(', ')}.</span></span>`);
+    if(oldLeader&&leader&&oldLeader.id!==leader.id)facts.push(`<span class="cka-news-fact"><span>Troca na liderança: <strong>${html(leaderPilot?.display_name||'Novo líder')}</strong> assumiu o 1º lugar do campeonato.</span></span>`);
+    const movement=previous.length?ranked.map((item,index)=>({item,index,old:previousRanked.findIndex(prev=>prev.id===item.id)})).filter(entry=>entry.old>=0&&entry.old!==entry.index).sort((a,b)=>Math.abs((b.old-b.index))-Math.abs(a.old-a.index)).slice(0,2):[];
+    movement.forEach(entry=>{const pilot=publicState.pilots.find(item=>item.id===entry.item.id),delta=entry.old-entry.index;if(pilot)facts.push(`<span class="cka-news-fact"><span><strong>${html(pilot.display_name)}</strong> ${delta>0?'subiu':'caiu'} ${Math.abs(delta)} ${Math.abs(delta)===1?'posição':'posições'} na classificação.</span></span>`);});
+    const custom=String(race.notes||'').trim();
+    const date=new Date(`${race.race_date}T12:00:00`).toLocaleDateString('pt-BR',{day:'2-digit',month:'short'});
+    replaceHTML(box,`<article class="cka-news-card"><span class="cka-news-label">Etapa ${race.round_number} · ${html(date)}</span><h3>${winner?`Confira os destaques da etapa ${race.round_number}`:`Etapa ${race.round_number} concluída`}</h3>${custom?`<p>${html(custom).replace(/\r?\n/g,'<br>')}</p>`:facts.length?`<div class="cka-news-facts">${facts.join('')}</div>`:'<p>Resumo em atualização conforme os dados oficiais forem publicados.</p>'}</article>`);
+  }
+  function buildNewsDraft(race){
+    const results=publicState.results.filter(row=>row.race_id===race.id),points=publicState.stagePoints.filter(row=>row.race_id===race.id),completed=publicState.races.filter(item=>item.status==='completed'&&item.results_published).sort((a,b)=>Number(a.round_number)-Number(b.round_number)),prior=completed.filter(item=>item.id!==race.id&&Number(item.round_number)<Number(race.round_number));
+    const facts=[],winnerRow=results.find(row=>Number(row.finish_position)===1),winner=publicState.pilots.find(item=>item.id===winnerRow?.pilot_id);
+    if(winner)facts.push(`${winner.display_name} venceu a etapa ${race.round_number}.`);
+    const fastest=results.filter(row=>Number(row.best_lap_ms)>0).sort((a,b)=>Number(a.best_lap_ms)-Number(b.best_lap_ms))[0],fastestPilot=publicState.pilots.find(item=>item.id===fastest?.pilot_id);
+    if(fastestPilot)facts.push(`${fastestPilot.display_name} fez a melhor volta (${lapText(fastest.best_lap_ms)}).`);
+    const penalized=points.filter(row=>Number(row.penalty_points)>0).map(row=>({pilot:publicState.pilots.find(item=>item.id===row.pilot_id),amount:Number(row.penalty_points)}));
+    if(penalized.length)facts.push(`Penalidades: ${penalized.map(item=>`${item.pilot?.display_name||'Piloto'} (−${item.amount} pontos)`).join(', ')}.`);
+    const rank=rankingForRaces(completed),oldRank=rankingForRaces(prior);
+    if(rank[0]&&oldRank[0]&&rank[0].id!==oldRank[0].id){const pilot=publicState.pilots.find(item=>item.id===rank[0].id);facts.push(`A liderança do campeonato mudou: ${pilot?.display_name||'Novo líder'} assumiu o primeiro lugar.`);}
+    return facts.join(' ');
   }
   function syncLiveSeasonFacts() {
     const standings=new Map(publicState.standings.map(row=>[row.pilot_id,row]));
@@ -887,7 +972,7 @@ try {
     if(adminDataPromise)return adminDataPromise;
     adminDataPromise=(async()=>{
       const [r,p,t]=await Promise.all([
-        db.from('cka_races').select('id,season_id,round_number,race_date,start_time,venue,location,status,results_published').order('round_number'),
+        db.from('cka_races').select('id,season_id,round_number,race_date,start_time,venue,location,status,results_published,notes').order('round_number'),
         db.from('cka_pilots').select('id,season_id,pilot_number,full_name,display_name,default_team_id,photo_path,is_active').order('pilot_number'),
         db.from('cka_teams').select('id,name').eq('is_active',true).order('name')
       ]);
@@ -910,7 +995,7 @@ try {
     adminBox.querySelector('#cka-login').onsubmit=async e=>{e.preventDefault();const f=new FormData(e.currentTarget);const {error}=await db.auth.signInWithPassword({email:f.get('email'),password:f.get('password')});if(error)status(adminBox,error.message,true);else renderAdmin();};
   }
   function adminView() {
-    adminBox.innerHTML=`<div class="cka-box"><div style="display:flex;justify-content:space-between;gap:12px;align-items:center"><strong>Sessão: ${html(state.user.email)}</strong><button class="cka-action" id="cka-logout">Sair</button></div><div class="cka-tabs"><button data-admin-tab="race">Resultados</button><button data-admin-tab="schedule">Calendário</button><button data-admin-tab="team">Equipes</button><button data-admin-tab="pilots">Pilotos</button><button data-admin-tab="media">Fotos / YouTube</button></div><div id="cka-editor"></div><p class="cka-status" role="status"></p></div>`;
+    adminBox.innerHTML=`<div class="cka-box"><div style="display:flex;justify-content:space-between;gap:12px;align-items:center"><strong>Sessão: ${html(state.user.email)}</strong><button class="cka-action" id="cka-logout">Sair</button></div><div class="cka-tabs"><button data-admin-tab="race">Resultados</button><button data-admin-tab="grid">Grid</button><button data-admin-tab="schedule">Calendário</button><button data-admin-tab="team">Equipes</button><button data-admin-tab="pilots">Pilotos</button><button data-admin-tab="media">Fotos / YouTube</button></div><div id="cka-editor"></div><p class="cka-status" role="status"></p></div>`;
     adminBox.querySelector('#cka-logout').onclick=()=>db.auth.signOut().then(()=>{state.admin=false;renderAdmin();});
     adminBox.querySelectorAll('[data-admin-tab]').forEach(b=>b.onclick=()=>{adminBox.querySelectorAll('[data-admin-tab]').forEach(x=>x.classList.toggle('active',x===b));renderEditor(b.dataset.adminTab);});
     adminBox.querySelector('[data-admin-tab="race"]').click();
@@ -919,7 +1004,42 @@ try {
     const host=adminBox.querySelector('#cka-editor'); if(!host)return;
     const raceOpts=options(state.races,r=>`Etapa ${r.round_number} · ${r.venue}`), pilotOpts=options(state.pilots.filter(p=>p.is_active),p=>`${p.pilot_number} · ${p.display_name}`), teamOpts='<option value="">Sem equipe / não definida</option>'+options(state.teams,t=>t.name);
     if(which==='race') host.innerHTML=`<h3>Lançamento de resultados por etapa</h3><p class="cka-muted">Digite apenas números nos campos de melhor volta e diferença; o formato é aplicado automaticamente ao sair do campo. O rascunho fica salvo neste navegador enquanto você preenche. A camisa CKA aplica +5 pontos; cada advertência desconta automaticamente 3 pontos. O descarte escolhe as duas piores posições, e o valor descontado é a pontuação bruta de colocação, antes da penalidade.</p><form id="cka-result"><div class="cka-result-toolbar"><label>Etapa<select name="race_id" required><option value="">Selecione uma etapa</option>${raceOpts}</select></label><label>Piloto para adicionar<select name="add_pilot_id"><option value="">Selecione um piloto</option>${pilotOpts}</select></label><button class="cka-action" type="button" data-add-pilot>Adicionar piloto</button></div><div class="cka-result-scroll"><table class="cka-result-table"><thead><tr><th>Piloto</th><th>Equipe na etapa</th><th>Situação</th><th>Posição</th><th>Melhor volta</th><th>Diferença para o 1º</th><th>Camisa CKA (+5)</th><th>Advertência (−3)</th><th></th></tr></thead><tbody data-result-rows><tr><td class="cka-result-empty" colspan="9">Selecione uma etapa para carregar os resultados já cadastrados.</td></tr></tbody></table></div><div class="cka-result-actions"><label style="display:flex;align-items:center;gap:8px;color:#b7c4d8"><input name="publish" type="checkbox"> Publicar etapa após salvar — atualiza resultados e pontuação no site</label><button class="cka-action primary" type="submit">Salvar resultados da etapa</button></div></form>`;
-    if(which==='schedule') host.innerHTML=`<h3>Editar etapa</h3><form class="cka-form" id="cka-schedule">${field('Etapa','race_id','select',{required:true,options:raceOpts})}${field('Data','race_date','date',{required:true})}${field('Horário','start_time','time',{required:true})}${field('Kartódromo','venue','text',{required:true})}${field('Localidade','location','text',{required:true})}<button class="cka-action primary">Salvar etapa</button></form>`;
+    if(which==='grid'){
+      const draft=[
+        ['Anderson Poubel',1],['Alexandre Monnerat',2],['Henrique Arroz',3],['Toninho Macedo',4],['André Mitta',5],['Sardinha',6],['Bernardo Gaertner',7],['André Afonso',8],['João Victor Barbosa',9],['Ricardo Finim',10],['Alessandro Soares',11],['Luiz Felipe',12],['Leonardo Rocha',13],['Miro',14],['Marcelo Albuquerque',15],['Pedro Pitanga',16],['Derson',17],['Adilson Mangiavaki',18],['José Geraldo',19],['Hiltinho',20],['Fábio',21]
+      ];
+      host.innerHTML=`<h3>Formação manual do grid</h3><p class="cka-muted">Informe a posição de largada de cada piloto. O grid da 9ª etapa foi preenchido conforme o PDF enviado e pode ser ajustado antes da publicação. A publicação do grid não altera a pontuação; após a corrida, a diferença entre largada e chegada aparece no resultado oficial.</p><form id="cka-grid-form"><div class="cka-result-toolbar"><label>Etapa<select name="race_id" required><option value="">Selecione uma etapa</option>${raceOpts}</select></label></div><div class="cka-result-scroll"><table class="cka-grid-edit-table"><thead><tr><th>Posição</th><th>Piloto</th></tr></thead><tbody data-grid-rows><tr><td colspan="2" class="cka-result-empty">Selecione uma etapa.</td></tr></tbody></table></div><div class="cka-result-actions"><label style="display:flex;align-items:center;gap:8px;color:#b7c4d8"><input type="checkbox" name="publish_grid"> Exibir publicamente no site</label><button class="cka-action primary" type="submit">Salvar formação do grid</button></div></form>`;
+      const form=host.querySelector('form'),gridRows=host.querySelector('[data-grid-rows]'),raceSelect=form.elements.race_id;
+      const drawGrid=async()=>{
+        if(!raceSelect.value){gridRows.innerHTML='<tr><td colspan="2" class="cka-result-empty">Selecione uma etapa.</td></tr>';return;}
+        const raceId=raceSelect.value,existing=await db.from('cka_race_grid').select('pilot_id,starting_position,is_published').eq('race_id',raceId);
+        if(existing.error){gridRows.innerHTML='';status(adminBox,`Não foi possível carregar o grid: ${existing.error.message}. Aplique primeiro a nova migration do site.`,true);return;}
+        if(raceSelect.value!==raceId)return;
+        const saved=new Map((existing.data||[]).map(row=>[row.pilot_id,row]));
+        let rows=state.pilots.filter(pilot=>pilot.is_active).map(pilot=>({pilot,position:saved.get(pilot.id)?.starting_position}));
+        if(!rows.some(row=>row.position!=null)&&Number(state.races.find(race=>race.id===raceId)?.round_number)===9){rows=rows.map(row=>{const item=draft.find(([name])=>name.localeCompare(row.pilot.display_name,'pt-BR',{sensitivity:'base'})===0);return {...row,position:item?.[1]};});}
+        rows=rows.filter(row=>row.position!=null||!draft.some(([name])=>name.localeCompare(row.pilot.display_name,'pt-BR',{sensitivity:'base'})===0)||Number(state.races.find(race=>race.id===raceId)?.round_number)!==9);
+        rows.sort((a,b)=>(Number(a.position)||999)-(Number(b.position)||999)||a.pilot.pilot_number-b.pilot.pilot_number);
+        gridRows.innerHTML=rows.map(({pilot,position})=>`<tr data-grid-pilot="${html(pilot.id)}"><th scope="row">${html(pilot.display_name)}</th><td><input type="number" name="starting_position" min="1" max="99" value="${position??''}" aria-label="Posição de largada de ${html(pilot.display_name)}"></td></tr>`).join('');
+        form.elements.publish_grid.checked=(existing.data||[]).some(row=>row.is_published);
+      };
+      raceSelect.onchange=drawGrid;void drawGrid();
+      form.onsubmit=async event=>{
+        event.preventDefault();const race=state.races.find(item=>item.id===raceSelect.value);if(!race)return status(adminBox,'Selecione uma etapa.',true);
+        const entries=[...gridRows.querySelectorAll('tr[data-grid-pilot]')].map(row=>({pilot_id:row.dataset.gridPilot,starting_position:Number(row.querySelector('[name="starting_position"]').value)})).filter(row=>Number.isInteger(row.starting_position)&&row.starting_position>0);
+        if(!entries.length)return status(adminBox,'Informe ao menos uma posição de largada.',true);
+        if(entries.length!==gridRows.querySelectorAll('tr[data-grid-pilot]').length)return status(adminBox,'Preencha a posição de todos os pilotos listados antes de salvar o grid.',true);
+        const positions=new Set();for(const row of entries){if(positions.has(row.starting_position))return status(adminBox,`A posição ${row.starting_position}º está repetida. Cada posição precisa ser única.`,true);positions.add(row.starting_position);}
+        const published=form.elements.publish_grid.checked, payload=entries.map(row=>({season_id:race.season_id,race_id:race.id,pilot_id:row.pilot_id,starting_position:row.starting_position,is_published:published}));
+        const {error:upsertError}=await db.from('cka_race_grid').upsert(payload,{onConflict:'race_id,pilot_id'});if(upsertError)return status(adminBox,`Não foi possível salvar o grid: ${upsertError.message}`,true);
+        const submittedIds=entries.map(row=>row.pilot_id),previous=await db.from('cka_race_grid').select('pilot_id').eq('race_id',race.id);
+        if(previous.error)return status(adminBox,`O grid foi salvo, mas não consegui conferir as linhas antigas: ${previous.error.message}`,true);
+        const removed=(previous.data||[]).map(row=>row.pilot_id).filter(id=>!submittedIds.includes(id));
+        if(removed.length){const {error}=await db.from('cka_race_grid').delete().eq('race_id',race.id).in('pilot_id',removed);if(error)return status(adminBox,`O grid foi salvo, mas não consegui remover pilotos retirados: ${error.message}`,true);}
+        const synced=await refreshPublicData();status(adminBox,synced?`Grid da etapa ${race.round_number} salvo${published?' e publicado':''}.`:'Grid salvo, mas não consegui atualizar a visualização pública.',!synced);
+      };
+    }
+    if(which==='schedule') host.innerHTML=`<h3>Editar etapa e notícia</h3><p class="cka-muted">A notícia aparece no card inicial depois que a etapa for publicada. Você pode escrevê-la ou gerar um resumo dos fatos oficiais disponíveis.</p><form class="cka-form cka-news-form" id="cka-schedule">${field('Etapa','race_id','select',{required:true,options:raceOpts})}${field('Data','race_date','date',{required:true})}${field('Horário','start_time','time',{required:true})}${field('Kartódromo','venue','text',{required:true})}${field('Localidade','location','text',{required:true})}<label>Texto da notícia (opcional)<textarea name="notes" maxlength="1200" placeholder="Escreva o resumo da etapa para a página inicial…"></textarea></label><button type="button" class="cka-action" data-generate-news>Gerar resumo automático com dados oficiais</button><button class="cka-action primary">Salvar etapa e notícia</button></form>`;
     if(which==='team') host.innerHTML=`<h3>Vincular piloto a uma equipe padrão</h3><form class="cka-form" id="cka-team">${field('Piloto','pilot_id','select',{required:true,options:pilotOpts})}${field('Equipe','team_id','select',{options:teamOpts})}<button class="cka-action primary">Salvar equipe</button></form>`;
     if(which==='pilots') {
       const editOpts='<option value="">＋ Novo piloto</option>'+options(state.pilots,p=>`${p.pilot_number} · ${p.display_name}${p.is_active?'':' (inativo)'}`);
@@ -1123,7 +1243,7 @@ try {
       select.dispatchEvent(new Event('change'));
       return;
     }
-    if(which==='schedule'&&select){select.onchange=()=>{const r=state.races.find(x=>x.id===select.value);if(!r)return;form.elements.race_date.value=r.race_date;form.elements.start_time.value=String(r.start_time).slice(0,5);form.elements.venue.value=r.venue;form.elements.location.value=r.location;};select.dispatchEvent(new Event('change'));}
+    if(which==='schedule'&&select){select.onchange=()=>{const r=state.races.find(x=>x.id===select.value);if(!r)return;form.elements.race_date.value=r.race_date;form.elements.start_time.value=String(r.start_time).slice(0,5);form.elements.venue.value=r.venue;form.elements.location.value=r.location;form.elements.notes.value=r.notes||'';};select.dispatchEvent(new Event('change'));host.querySelector('[data-generate-news]').onclick=()=>{const race=state.races.find(item=>item.id===select.value),summary=race?buildNewsDraft(race):'';if(!summary)return status(adminBox,'Não há fatos oficiais suficientes para gerar o resumo desta etapa.',true);form.elements.notes.value=summary;status(adminBox,'Resumo montado a partir dos dados oficiais publicados. Confira e salve para exibi-lo na página inicial.');};}
     if(which==='pilots') {
       const picker=form.elements.existing_pilot_id;
       const loadPilot=()=>{
@@ -1183,7 +1303,7 @@ try {
       };
       picker.dispatchEvent(new Event('change'));
     }
-    if(which==='schedule')form.onsubmit=async e=>{e.preventDefault();const f=new FormData(form),race=state.races.find(item=>item.id===f.get('race_id')),updates={race_date:f.get('race_date'),start_time:f.get('start_time'),venue:f.get('venue'),location:f.get('location')};const {error}=await db.from('cka_races').update(updates).eq('id',f.get('race_id'));if(!error){Object.assign(race,updates);await refreshPublicData();}status(adminBox,error?.message||'Etapa atualizada.',!!error);};
+    if(which==='schedule')form.onsubmit=async e=>{e.preventDefault();const f=new FormData(form),race=state.races.find(item=>item.id===f.get('race_id')),updates={race_date:f.get('race_date'),start_time:f.get('start_time'),venue:f.get('venue'),location:f.get('location'),notes:String(f.get('notes')||'').trim()||null};const {error}=await db.from('cka_races').update(updates).eq('id',f.get('race_id'));if(!error){Object.assign(race,updates);await refreshPublicData();}status(adminBox,error?.message||'Etapa e notícia atualizadas.',!!error);};
     if(which==='team')form.onsubmit=async e=>{e.preventDefault();const f=new FormData(form),pilot=state.pilots.find(x=>x.id===f.get('pilot_id'));const {error}=await db.from('cka_pilots').update({default_team_id:f.get('team_id')||null}).eq('id',pilot.id);if(!error){pilot.default_team_id=f.get('team_id')||null;await refreshPublicData();}status(adminBox,error?.message||'Equipe padrão do piloto atualizada.',!!error);};
     if(which==='media'){
       const list=host.querySelector('[data-admin-media-list]'),selectAll=host.querySelector('[data-select-all-media]'),deleteSelected=host.querySelector('[data-delete-selected-media]');
