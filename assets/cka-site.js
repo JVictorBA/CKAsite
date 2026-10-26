@@ -1,3 +1,4 @@
+(async()=>{
 let createClient;
 try {
   ({ createClient } = await import('https://esm.sh/@supabase/supabase-js@2'));
@@ -28,6 +29,7 @@ try {
   };
   const db = createClient(config.url, config.publishableKey, { global: { fetch: fetchWithTimeout } });
   const publicState = { races: [], pilots: [], teams: [], stagePoints: [], standings: [], results: [], grid: [], ready: false, error: null };
+  let homeStandingsMode = 'pilots';
   const expandedTeamIds = new Set();
   const boundTeamButtons = new WeakSet();
   function showPublicSyncNotice(message) {
@@ -62,13 +64,15 @@ try {
   const nav = document.querySelector('.tabs');
   const main = document.querySelector('main');
   if (!nav || !main) return;
+  nav.querySelector('.tab[data-panel="equipes"]')?.remove();
 
   const style = document.createElement('style');
   style.textContent = `
     :root{--cka-night:#070d16;--cka-navy:#0d1928;--cka-card:#111f31;--cka-line:#29415b;--cka-orange:#ff922e;--cka-gold:#ffd54a;--cka-green:#78d989;--cka-teal:#41c6bb;--cka-text:#f4f7fb;--cka-muted:#9eacc0}
-    @keyframes ckaPanelEnter{from{opacity:0;transform:translateY(9px)}to{opacity:1;transform:translateY(0)}}
-    main .panel.active{animation:ckaPanelEnter .28s cubic-bezier(.2,.7,.2,1) both}
-    @media(prefers-reduced-motion:reduce){main .panel.active{animation:none}}
+    @keyframes ckaPanelEnter{from{opacity:0;transform:translateY(5px);filter:blur(1.5px)}to{opacity:1;transform:translateY(0);filter:blur(0)}}
+    main .panel.active{animation:ckaPanelEnter .18s cubic-bezier(.2,.7,.2,1) both}
+    #tab-transition{display:none!important}
+    @media(prefers-reduced-motion:reduce){main .panel.active{animation:none!important}}
     body{background:radial-gradient(ellipse at 78% 0%,rgba(49,91,115,.24),transparent 38%),radial-gradient(ellipse at 0% 45%,rgba(30,75,88,.15),transparent 40%),var(--cka-night);color:var(--cka-text);font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}
     .wrap{width:min(1480px,calc(100% - 40px))}
     .top{height:78px!important;min-height:78px!important;margin:12px auto 0;padding:0 20px!important;position:sticky;top:8px;z-index:80;display:flex;justify-content:space-between!important;gap:18px;border:1px solid rgba(91,143,187,.32)!important;border-radius:20px!important;background:rgba(8,18,31,.94)!important;box-shadow:0 14px 40px rgba(0,0,0,.34)!important;backdrop-filter:blur(18px)}
@@ -82,6 +86,16 @@ try {
     .top .tab{min-width:0;padding:11px 13px;border:1px solid transparent;border-radius:11px;background:transparent;color:#c2cedd;font-size:12px;font-weight:750;letter-spacing:.01em;transition:background .18s,border-color .18s,color .18s}
     .top .tab:hover{background:rgba(255,255,255,.06);color:#fff}
     .top .tab.active{background:linear-gradient(110deg,rgba(255,146,46,.22),rgba(255,213,74,.1));border-color:rgba(255,164,61,.55);color:#ffe18a;box-shadow:inset 0 0 0 1px rgba(255,213,74,.08)}
+    .cka-next-race-topbar{position:sticky;top:64px;z-index:99;width:100%;margin:0;border-bottom:1px solid rgba(255,255,255,.1);background:rgba(15,17,22,.96);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+    .cka-next-race-inner{display:flex;width:min(1480px,100%);min-height:50px;margin:0 auto;padding:7px clamp(16px,3.2vw,48px);align-items:center;justify-content:space-between;gap:14px}
+    .cka-next-race-info{display:flex;min-width:0;align-items:center;gap:12px}
+    .cka-race-flag{width:25px;height:25px;flex:0 0 25px;border:1px solid rgba(255,255,255,.24);border-radius:50%;background-color:#f5f5f5;background-image:linear-gradient(45deg,#17191d 25%,transparent 25%,transparent 75%,#17191d 75%),linear-gradient(45deg,#17191d 25%,transparent 25%,transparent 75%,#17191d 75%);background-position:0 0,5px 5px;background-size:10px 10px}
+    .cka-next-race-copy{display:grid;min-width:0;gap:2px}
+    .cka-next-race-kicker{color:#d4af37;font-size:9px;font-weight:850;letter-spacing:.14em;text-transform:uppercase}
+    .cka-next-race-title{overflow:hidden;color:#f5f6f8;font-size:14px;font-weight:850;text-overflow:ellipsis;white-space:nowrap}
+    .cka-next-race-meta{overflow:hidden;color:#9ca4b0;font-size:10px;text-overflow:ellipsis;white-space:nowrap}
+    .cka-next-race-calendar{display:inline-flex;flex:0 0 auto;align-items:center;gap:8px;padding:7px 10px;border:1px solid rgba(255,255,255,.12);border-radius:7px;background:transparent;color:#d9dde3;font-size:10px;font-weight:800;text-decoration:none;text-transform:uppercase;letter-spacing:.06em;cursor:pointer}
+    .cka-next-race-calendar:hover{border-color:#d4af37;color:#f1d98a}
     main.wrap{padding-bottom:24px}
     .hero{position:relative;display:flex;min-height:300px;margin:20px 0 22px;padding:clamp(28px,5vw,58px);flex-direction:column;align-items:flex-start;justify-content:center;overflow:hidden;border:1px solid rgba(79,139,187,.38);border-radius:24px;background:radial-gradient(circle at 83% 50%,rgba(55,110,124,.28),transparent 24%),linear-gradient(115deg,#101e30 0%,#0c1827 56%,#121d2b 100%);box-shadow:0 24px 55px rgba(0,0,0,.25)}
     .hero:before{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgba(8,17,28,.1),transparent 55%,rgba(11,25,39,.15));pointer-events:none}
@@ -103,6 +117,68 @@ try {
     #classification .row{background:rgba(15,29,46,.92);border-color:rgba(76,112,146,.24)}
     #classification .row.headrow{background:linear-gradient(100deg,#182c40,#1a2638);color:#b5c3d2}
     #classification .row:not(.headrow):hover{background:#192b40}
+    .cka-season-showcase{margin:0 0 18px;padding:20px 0 22px;border-bottom:1px solid rgba(255,255,255,.1)}
+    .cka-season-showcase-head{display:flex;align-items:center;justify-content:space-between;gap:16px;margin:0 4px 18px}
+    .cka-season-showcase-title{margin:0;color:#f5f5f5;font-size:clamp(26px,3.3vw,38px);font-weight:950;letter-spacing:-.055em;text-transform:uppercase}
+    .cka-season-showcase-title span{color:#d4af37}
+    .cka-season-switch{display:flex;gap:18px;align-self:stretch;border-bottom:1px solid rgba(255,255,255,.1)}
+    .cka-season-switch button{position:relative;padding:10px 4px;border:0;background:transparent;color:#9da3ad;font:inherit;font-size:11px;line-height:1;font-weight:800;text-transform:uppercase;letter-spacing:.08em;cursor:pointer}
+    .cka-season-switch button[aria-pressed="true"]{color:#fff}
+    .cka-season-switch button[aria-pressed="true"]:after{position:absolute;right:0;bottom:-1px;left:0;height:2px;background:#d4af37;content:""}
+    .cka-season-podium{display:grid;grid-template-columns:1fr 1.08fr 1fr;gap:12px;align-items:end;margin:0 4px 20px}
+    .cka-podium-card{position:relative;display:flex;min-width:0;height:196px;padding:18px;flex-direction:column;justify-content:space-between;overflow:hidden;border:1px solid rgba(255,255,255,.12);border-radius:12px;background:linear-gradient(100deg,var(--podium-dark),var(--podium-light));isolation:isolate}
+    .cka-podium-card:after{position:absolute;z-index:-1;inset:0;content:"";opacity:.14;background-image:linear-gradient(90deg,transparent,rgba(255,255,255,.22)),repeating-linear-gradient(0deg,transparent 0 3px,rgba(255,255,255,.13) 3px 4px);mask-image:linear-gradient(90deg,#000,transparent 85%)}
+    .cka-podium-card[data-rank="1"]{height:224px}
+    .cka-podium-card[data-rank="3"]{height:182px}
+    .cka-podium-card-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+    .cka-podium-rank{font-size:25px;font-weight:950;line-height:1;letter-spacing:-.05em}
+    .cka-podium-rank small{margin-left:3px;font-size:9px;vertical-align:top;letter-spacing:0}
+    .cka-podium-card:not(.is-team):before{position:absolute;z-index:1;right:0;bottom:0;width:54%;height:100%;content:"";background:radial-gradient(ellipse at 72% 78%,rgba(255,255,255,.2),transparent 67%),linear-gradient(90deg,transparent,rgba(255,255,255,.045));pointer-events:none}
+    .cka-podium-avatar{position:absolute;z-index:1;right:0;bottom:0;width:57%;height:100%;max-width:270px;max-height:100%;border:0!important;border-radius:0!important;background:transparent!important;object-fit:contain!important;object-position:center bottom!important;opacity:1;mask-image:linear-gradient(90deg,transparent 0%,#000 20%,#000 100%);filter:drop-shadow(-10px 0 14px rgba(0,0,0,.3))}
+    .cka-podium-copy{position:relative;z-index:2;max-width:62%;text-shadow:0 2px 8px rgba(0,0,0,.5)}
+    .cka-podium-name{display:block;margin:0 0 3px;font-size:clamp(15px,1.7vw,20px);font-weight:900;letter-spacing:-.03em}
+    .cka-podium-team{display:block;font-size:11px;font-weight:650;opacity:.88}
+    .cka-podium-score{display:block;margin-top:15px;font-size:19px;font-weight:950;letter-spacing:-.03em}
+    .cka-podium-score small{font-size:9px;letter-spacing:.06em}
+    .cka-podium-card.is-team .cka-podium-avatar{display:none}
+    .cka-team-crest{display:grid;width:48px;height:48px;place-items:center;border:1px solid #ffffff50;border-radius:14px;background:#09111a40;font-size:18px;font-weight:950;letter-spacing:-.08em}
+    .cka-season-team-table{overflow:hidden;border:1px solid rgba(255,255,255,.1);border-radius:12px;background:#11151b}
+    .cka-season-team-row{display:grid;grid-template-columns:64px minmax(0,1fr) 90px;align-items:center;gap:12px;min-height:48px;padding:8px 14px;border-top:1px solid rgba(255,255,255,.08)}
+    .cka-season-team-row.cka-season-team-head{border-top:0;color:#aab1bc;font-size:10px;font-weight:750;text-transform:uppercase;letter-spacing:.06em}
+    .cka-season-team-row:not(:first-child) strong:last-child{text-align:right;color:#f3d25f;font-size:16px}
+    .cka-season-team-row .cka-season-team-name{font-weight:800}
+    .cka-season-team-entry>.cka-season-team-row>strong{color:#f3d36d;text-align:right;font-size:16px}
+    .cka-season-team-toggle{display:flex;min-width:0;align-items:center;justify-content:space-between;gap:12px;padding:5px 0;border:0;background:transparent;color:#f5f6f8;font:inherit;text-align:left;cursor:pointer}
+    .cka-season-team-toggle:hover .cka-season-team-name{color:#ffe18a}
+    .cka-season-team-toggle:focus-visible{outline:2px solid #d4af37;outline-offset:3px}
+    .cka-season-team-toggle-mark{display:grid;width:25px;height:25px;flex:0 0 25px;place-items:center;border:1px solid rgba(212,175,55,.42);border-radius:50%;color:#f3d36d;font-size:17px;line-height:1}
+    .cka-season-team-dropdown[hidden]{display:none!important}
+    .cka-season-team-dropdown{display:grid;gap:10px;padding:10px 14px 14px 90px;border-top:1px solid rgba(255,255,255,.07);background:rgba(4,8,13,.28)}
+    .cka-season-team-stage{overflow:hidden;border:1px solid rgba(255,255,255,.08);border-radius:9px;background:rgba(18,23,31,.8)}
+    .cka-season-team-stage h4{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0;padding:10px 12px;border-bottom:1px solid rgba(255,255,255,.08);color:#b7c1ce;font-size:11px}
+    .cka-season-team-stage h4 b{flex:0 0 auto;color:#f3d36d;font-size:10px}
+    .cka-season-team-score{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:36px;padding:6px 12px;border-bottom:1px solid rgba(255,255,255,.045);color:#e7ebf0;font-size:11px}
+    .cka-season-team-score:last-child{border-bottom:0}
+    .cka-season-team-score b{display:flex;align-items:center;gap:6px;color:#dce2e9;font-size:12px}
+    .cka-season-team-score.is-counted{background:linear-gradient(90deg,rgba(212,175,55,.13),rgba(212,175,55,.035));box-shadow:inset 3px 0 #d4af37}
+    .cka-season-team-score.is-counted b{color:#ffe18a}
+    .cka-season-team-score small{color:#f3d36d;font-size:9px;font-weight:800}
+    .cka-season-team-score.is-empty{color:#8d98a7}
+    .cka-season-team-legend{margin:0;color:#aeb8c6;font-size:10px}
+    .cka-season-team-dropdown .team-score-table-wrap{width:100%;max-width:100%;overflow:auto;border:1px solid rgba(255,255,255,.09);border-radius:9px;background:#101319;-webkit-overflow-scrolling:touch}
+    .cka-season-team-dropdown .team-score-table{width:100%;min-width:1040px;border-collapse:collapse;font-size:11px}
+    .cka-season-team-dropdown .team-score-table th,.cka-season-team-dropdown .team-score-table td{padding:9px 10px;border-bottom:1px solid rgba(255,255,255,.07);text-align:center;white-space:nowrap}
+    .cka-season-team-dropdown .team-score-table thead th{position:sticky;top:0;background:#1a2028;color:#aab5c4;font-size:10px;text-transform:uppercase;z-index:1}
+    .cka-season-team-dropdown .team-score-table th:first-child,.cka-season-team-dropdown .team-score-table td:first-child{position:sticky;left:0;min-width:190px;text-align:left;background:#14181f;z-index:2}
+    .cka-season-team-dropdown .team-score-pilot{display:inline-flex;align-items:center;gap:8px;color:#f5f6f8;font-weight:750}
+    .cka-season-team-dropdown .team-score-pilot img,.cka-season-team-dropdown .team-score-pilot .placeholder{width:28px;height:28px;min-width:28px;border-radius:50%;object-fit:cover}
+    .cka-season-team-dropdown .team-score-table td{color:#e8eaf0}
+    .cka-season-team-dropdown .team-score-table td.team-score-counted{background:linear-gradient(180deg,rgba(212,175,55,.18),rgba(212,175,55,.07));color:#ffe48a;font-weight:900;box-shadow:inset 0 2px 0 rgba(255,218,95,.42)}
+    .cka-season-team-dropdown .team-score-table td.team-score-counted:after{content:' ✓';color:#f3d36d;font-size:9px}
+    .cka-season-team-dropdown .team-score-table .team-score-total td{color:#f3d36d;font-weight:800;border-top:1px solid rgba(212,175,55,.35)}
+    .cka-season-team-dropdown .team-score-table .penalty-mark{display:inline-flex;width:14px;height:14px;align-items:center;justify-content:center;margin-left:3px;border-radius:50%;background:#7f1d1d;color:#fecaca;font-size:10px;font-weight:900;vertical-align:1px}
+    @media(max-width:680px){.cka-season-team-dropdown .team-score-table{min-width:1040px}.cka-season-team-dropdown .team-score-table th:first-child,.cka-season-team-dropdown .team-score-table td:first-child{min-width:155px}}
+    @media(max-width:680px){.cka-season-showcase{padding-top:16px}.cka-season-showcase-head{align-items:flex-start;flex-direction:column;gap:8px;margin-bottom:12px}.cka-season-switch{width:100%}.cka-season-podium{grid-template-columns:repeat(3,minmax(210px,1fr));overflow-x:auto;align-items:end;padding:6px 2px 12px;scroll-snap-type:x mandatory}.cka-podium-card,.cka-podium-card[data-rank="1"],.cka-podium-card[data-rank="3"]{height:190px;scroll-snap-align:center}.cka-podium-card[data-rank="1"]{height:210px}.cka-podium-avatar{width:57%;height:100%}.cka-podium-copy{max-width:61%}.cka-season-team-row{grid-template-columns:42px minmax(0,1fr) 60px;gap:8px;padding:8px 9px}.cka-season-team-dropdown{padding:9px}.cka-season-team-stage h4{align-items:flex-start;flex-direction:column;gap:5px}}
     #teams .teams{border:1px solid rgba(74,116,154,.38);border-radius:18px;overflow:hidden;background:rgba(13,25,40,.78)}
     #teams .teamrow{background:rgba(15,29,46,.92);border-color:rgba(76,112,146,.24)}
     #teams .teamrow.headrow{background:linear-gradient(100deg,#182c40,#1a2638)}
@@ -119,8 +195,16 @@ try {
     footer.wrap{display:flex;justify-content:space-between;gap:12px;padding:18px 4px 24px;border-top:1px solid rgba(74,116,154,.25);color:#8394aa;font-size:11px}
     @media(max-width:850px){.wrap{width:min(100% - 24px,1480px)}.top{height:auto!important;min-height:68px!important;padding:8px 12px!important;gap:8px}.top .brand{font-size:13px}.top .brand img{width:34px!important;height:34px!important}.top .tabs{gap:2px}.top .tab{padding:9px 8px;font-size:11px}.hero{min-height:260px}.hero:after{right:-5%;width:240px;height:240px;opacity:.1}}
     @media(max-width:560px){.wrap{width:calc(100% - 20px)}.top{position:relative;top:0;flex-wrap:wrap;border-radius:16px!important}.top .brand{font-size:12px}.top .tabs{width:100%;justify-content:flex-start;margin:0;order:2}.top .tab{padding:8px 10px;font-size:10px}.hero{min-height:250px;margin-top:12px;padding:25px 21px;border-radius:18px}.hero h1{max-width:340px;font-size:clamp(33px,10vw,48px)}.hero p{max-width:300px;font-size:13px}.hero:after{right:-44px;top:24%;width:190px;height:190px}.head{display:block;margin:20px 2px 12px}.head p{margin-top:8px}.note{font-size:11px}.scroll{border-radius:14px}footer.wrap{display:block;line-height:1.8}}
+    @media(max-width:560px){.cka-next-race-inner{min-height:46px;padding:6px 12px;gap:8px}.cka-next-race-info{gap:8px}.cka-race-flag{width:21px;height:21px;flex-basis:21px;background-size:8px 8px;background-position:0 0,4px 4px}.cka-next-race-title{max-width:calc(100vw - 150px);font-size:12px}.cka-next-race-meta{max-width:calc(100vw - 150px);font-size:9px}.cka-next-race-calendar{padding:7px;border:0;font-size:0}.cka-next-race-calendar:after{content:"›";font-size:20px;line-height:12px}}
     .top{height:auto!important;min-height:64px;padding-top:8px;padding-bottom:8px}.top .tabs{height:auto;flex-wrap:wrap;overflow:visible;justify-content:flex-end}
     .cka-extra{margin-top:24px}.cka-extra[hidden]{display:none!important}
+    .cka-regulation-intro{display:flex;align-items:center;justify-content:space-between;gap:18px;flex-wrap:wrap;margin:0 4px 14px;padding:16px 18px;border:1px solid rgba(212,175,55,.25);border-radius:14px;background:linear-gradient(115deg,rgba(212,175,55,.09),rgba(16,31,48,.78));color:#c3ccd7;line-height:1.55}
+    .cka-regulation-intro strong{display:block;margin-bottom:3px;color:#f4f7fb;font-size:15px}
+    .cka-regulation-actions{display:flex;gap:9px;flex-wrap:wrap}
+    .cka-regulation-actions a{display:inline-flex;align-items:center;justify-content:center;min-height:40px;padding:9px 13px;border:1px solid #40536a;border-radius:9px;background:#162235;color:#f4f7fb;font-weight:750;text-decoration:none}
+    .cka-regulation-actions a:first-child{border-color:#d4af37;background:#d4af37;color:#15130d}
+    .cka-regulation-frame{display:block;width:100%;height:min(78vh,1000px);min-height:600px;border:1px solid rgba(74,116,154,.38);border-radius:16px;background:#15191f}
+    @media(max-width:560px){.cka-regulation-frame{height:75vh;min-height:520px}.cka-regulation-intro{padding:14px}.cka-regulation-actions{width:100%}.cka-regulation-actions a{flex:1}}
     .cka-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px}
     .cka-card,.cka-box{padding:18px;border:1px solid #2a405e;border-radius:14px;background:#101b2b;color:#edf3fc}
     .cka-card h3{margin:6px 0 10px}.cka-muted{color:#9cacc2}.cka-form{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;margin:14px 0}
@@ -294,6 +378,10 @@ try {
     .cka-result-table .cka-pilot-cell{min-width:160px;color:#fff}
     .cka-result-table .cka-check{min-width:17px;width:17px}
     .cka-result-empty{padding:18px 10px!important;color:#9ba3ae!important}
+    #resultados .result-pilot-copy{display:grid;min-width:0;gap:2px}
+    #resultados .result-pilot-copy strong{overflow:hidden;color:#f5f6f8;text-overflow:ellipsis;white-space:nowrap}
+    #resultados .result-team{position:relative;display:inline-flex;align-items:center;width:max-content;max-width:100%;min-height:13px;padding-left:8px;overflow:hidden;color:#a5adba;font-size:9px;line-height:1.2;text-overflow:ellipsis;white-space:nowrap}
+    #resultados .result-team:before{position:absolute;top:1px;bottom:1px;left:0;width:3px;border-radius:3px;background:var(--row-team-color,#738095);content:""}
     .cka-status{padding:6px 0;color:#92d6a6!important;line-height:1.5}
     .cka-status[style*="255, 156, 145"]{color:#ff9c91!important}
     #cka-admin .cka-content>p,#cka-admin #cka-editor>p{color:#aeb4be}
@@ -311,6 +399,13 @@ try {
     header.top .tab:after{display:none!important}
     header.top .tab:hover{color:#fff!important;background:transparent!important}
     header.top .tab.active{border-bottom-color:var(--gold)!important;background:transparent!important;color:#fff!important;box-shadow:none!important}
+    header.top .tabs{gap:2px!important;scrollbar-width:none!important}
+    header.top .tab{isolation:isolate!important;overflow:visible!important;margin:0 -3px 0 0!important;padding:12px 21px!important;border-bottom:2px solid transparent!important;background:linear-gradient(145deg,#1c1e26,#12141a)!important;color:#d8dbe1!important;clip-path:polygon(13px 0,100% 0,calc(100% - 13px) 100%,0 100%);transition:color .18s,background .18s,border-color .18s!important}
+    header.top .tab:after{display:block!important;right:15px!important;bottom:0!important;left:15px!important;height:2px!important;border-radius:0!important;background:var(--gold)!important;content:"";transform:scaleX(0)!important;transform-origin:left!important;transition:transform .18s ease!important}
+    header.top .tab:hover{background:linear-gradient(145deg,#292c36,#1b1e26)!important;color:#fff!important}
+    header.top .tab.active{border-bottom-color:transparent!important;background:linear-gradient(145deg,#252832,#1a1c23)!important;color:#fff!important}
+    header.top .tab.active:after{transform:scaleX(1)!important}
+    header.top .tab:focus-visible{outline:2px solid var(--gold)!important;outline-offset:-3px!important}
     .cka-home-layout{display:block!important;margin:24px 0 32px!important}
     .cka-standings-widget{display:none!important}
     body.cka-home-active .cka-home-layout{display:grid!important;grid-template-columns:minmax(0,1.7fr) minmax(310px,.8fr)!important;gap:22px!important}
@@ -358,15 +453,20 @@ try {
     .cka-rank-move{display:inline-flex;align-items:center;justify-content:center;margin-left:5px;padding:2px 5px;border-radius:999px;font-size:9px;font-weight:900;vertical-align:2px}.cka-news-section{padding:12px 0 14px;border-bottom:1px solid var(--border)}.cka-news-card{padding:11px;border:1px solid rgba(212,175,55,.2);border-radius:9px;background:linear-gradient(130deg,rgba(212,175,55,.055),rgba(255,255,255,.025))}.cka-news-label{color:var(--gold);font-size:9px;font-weight:850;letter-spacing:.12em;text-transform:uppercase}.cka-news-card h3{margin:5px 0;color:#fff;font-size:13px;line-height:1.35}.cka-news-card p{margin:5px 0 0;color:var(--text-muted);font-size:10px;line-height:1.5}.cka-news-facts{display:grid;gap:5px;margin-top:9px}.cka-news-fact{display:flex;gap:7px;color:var(--text-primary);font-size:10px;line-height:1.4}.cka-news-fact:before{content:'•';color:var(--gold);font-weight:900}.cka-news-form textarea{min-height:105px;width:100%;padding:10px;border:1px solid #344962;border-radius:8px;background:#0b1421;color:#f5f7fb;font:inherit;resize:vertical}
     .cka-grid-edit-table{width:100%;min-width:460px;border-collapse:collapse}.cka-grid-edit-table th,.cka-grid-edit-table td{padding:8px;border-bottom:1px solid var(--border);text-align:left}.cka-grid-edit-table th{color:var(--text-muted);font-size:10px;text-transform:uppercase}.cka-grid-edit-table input{width:80px;max-width:100%;padding:8px;border:1px solid var(--border);border-radius:7px;background:#0b1018;color:var(--text-primary);font:inherit}
     #pilotcards.pilotcards{display:block!important;width:100%!important;min-width:0!important;overflow:visible!important;border:0!important;border-radius:0!important;background:transparent!important}
-    #pilotcards .pilot-grid{display:grid!important;width:100%!important;grid-template-columns:repeat(auto-fill,minmax(min(100%,205px),1fr))!important;gap:16px!important}
-    #pilotcards .pilot-card{display:flex!important;min-width:0!important;min-height:0!important;flex-direction:column!important;align-items:stretch!important;overflow:hidden!important;padding:10px!important;border:1px solid var(--border)!important;border-radius:10px!important;background:var(--surface)!important;box-shadow:none!important;backdrop-filter:none!important;cursor:pointer;transition:background .16s,border-color .16s!important}
-    #pilotcards .pilot-card:before{display:none!important}
-    #pilotcards .pilot-card:hover{transform:none!important;border-color:rgba(212,175,55,.38)!important;background:var(--surface-hover)!important;box-shadow:none!important}
-    #pilotcards .pilot-card img,#pilotcards .pilot-card>.placeholder{display:block!important;width:100%!important;height:180px!important;min-width:0!important;margin:0!important;object-fit:contain!important;object-position:center center!important;border:0!important;border-radius:7px!important;background:#171b22!important}
+    #pilotcards .pilot-grid{display:block!important;width:100%!important}
+    #pilotcards .pilot-team-section{display:block!important;width:100%!important;min-width:0!important;margin:0 0 18px!important;padding:0 0 18px!important;border-bottom:1px solid rgba(255,255,255,.12)!important}
+    #pilotcards .pilot-team-heading{display:flex!important;align-items:center!important;gap:10px!important;margin:0 0 12px!important;padding:0 2px 9px!important;border-bottom:1px solid color-mix(in srgb,var(--pilot-team-light) 42%,transparent)!important;color:#fff!important;font-size:16px!important;font-weight:850!important}
+    #pilotcards .pilot-team-heading:before{width:4px;height:18px;border-radius:4px;background:var(--pilot-team-light);content:""}
+    #pilotcards .pilot-team-heading small{margin-left:auto;color:#aeb8c6!important;font-size:10px!important;font-weight:650!important}
+    #pilotcards .pilot-team-grid{display:flex!important;width:100%!important;flex-flow:row nowrap!important;gap:14px!important;align-items:stretch!important;overflow-x:auto!important;padding:0 0 7px!important;scrollbar-width:thin;scrollbar-color:var(--pilot-team-light) rgba(255,255,255,.06);-webkit-overflow-scrolling:touch}
+    #pilotcards .pilot-card{--pilot-team-dark:#17415c;--pilot-team-light:#277da1;display:flex!important;flex:0 0 clamp(180px,20vw,230px)!important;width:clamp(180px,20vw,230px)!important;min-width:0!important;min-height:0!important;flex-direction:column!important;align-items:stretch!important;overflow:hidden!important;padding:10px!important;border:1px solid color-mix(in srgb,var(--pilot-team-light) 34%,transparent)!important;border-radius:10px!important;background:linear-gradient(145deg,color-mix(in srgb,var(--pilot-team-dark) 58%,#11151b),color-mix(in srgb,var(--pilot-team-light) 48%,#11151b) 48%,#11151b 100%)!important;box-shadow:0 10px 24px color-mix(in srgb,var(--pilot-team-dark) 19%,transparent)!important;backdrop-filter:none!important;cursor:pointer;transition:filter .16s,border-color .16s!important}
+    #pilotcards .pilot-card:before{display:block!important;inset:0!important;background:repeating-linear-gradient(0deg,transparent 0 3px,rgba(255,255,255,.05) 3px 4px),linear-gradient(90deg,rgba(0,0,0,.08),transparent 68%)!important;opacity:1!important;pointer-events:none}
+    #pilotcards .pilot-card:hover{transform:none!important;filter:brightness(1.08);border-color:rgba(255,255,255,.55)!important;box-shadow:0 12px 28px color-mix(in srgb,var(--pilot-team-dark) 40%,transparent)!important}
+    #pilotcards .pilot-card img,#pilotcards .pilot-card>.placeholder{display:block!important;width:100%!important;height:180px!important;min-width:0!important;margin:0!important;object-fit:contain!important;object-position:center center!important;border:1px solid rgba(255,255,255,.18)!important;border-radius:7px!important;background:linear-gradient(145deg,color-mix(in srgb,var(--pilot-team-dark) 75%,#10151d),color-mix(in srgb,var(--pilot-team-light) 35%,#171b22))!important}
     #pilotcards .pilot-card h3{margin:10px 2px 2px!important;color:#fff!important;font-size:15px!important;line-height:1.25!important;overflow-wrap:anywhere}
     #pilotcards .pilot-detail{margin-top:18px!important;padding:18px!important;border:1px solid var(--border)!important;border-radius:12px!important;background:var(--surface)!important;box-shadow:none!important;backdrop-filter:none!important}
     #pilotcards .pilot-detail-head img,#pilotcards .pilot-detail-head>.placeholder{border:0!important;border-radius:8px!important;box-shadow:none!important}
-    #pilotcards .pilot-detail-stats{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;width:100%!important;min-width:0!important;overflow:hidden!important;border:0!important;border-radius:8px!important;background:rgba(255,255,255,.035)!important}
+    #pilotcards .pilot-detail-stats{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;width:100%!important;min-width:0!important;overflow:hidden!important;border:0!important;border-radius:8px!important;background:rgba(8,11,16,.42)!important;backdrop-filter:blur(5px)}
     #pilotcards .pilot-detail-stats div{min-width:0!important;padding:10px 4px!important;overflow:hidden!important;border-color:var(--border)!important}
     #pilotcards .pilot-detail-stats div:nth-child(odd){border-left:0!important}
     #pilotcards .pilot-detail-stats div:nth-child(n+3){border-top:1px solid var(--border)!important}
@@ -374,12 +474,14 @@ try {
     #pilotcards .pilot-detail-stats b{color:var(--gold)!important}
     #pilotcards .pilot-detail-stats div:nth-child(2) b,#pilotcards .pilot-detail-stats div:nth-child(3) b,#pilotcards .pilot-detail-stats div:nth-child(4) b,#pilotcards .pilot-detail-stats div:nth-child(5) b{color:var(--gold)!important}
     @media(max-width:900px){body.cka-home-active .cka-home-layout{grid-template-columns:minmax(0,1.35fr) minmax(275px,.85fr)!important;gap:14px!important}}
-    @media(max-width:680px){header.top{height:auto!important;min-height:64px!important;padding:8px 16px!important;flex-wrap:wrap!important}header.top .tabs{width:100%;margin:0!important;justify-content:flex-start!important}.cka-home-layout{margin:16px 0 24px!important}body.cka-home-active .cka-home-layout{grid-template-columns:1fr!important;gap:12px!important}.cka-home-layout>.hero{min-height:300px!important}#pilotcards .pilot-grid{grid-template-columns:repeat(auto-fill,minmax(min(100%,180px),1fr))!important}}
-    @media(max-width:480px){header.top .tabs{gap:0!important}header.top .tab{padding:10px 9px!important;font-size:11px!important}.cka-home-layout>.hero{min-height:270px!important;padding:24px 18px!important}#pilotcards .pilot-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:10px!important}#pilotcards .pilot-card{padding:8px!important}#pilotcards .pilot-card img,#pilotcards .pilot-card>.placeholder{height:150px!important}#pilotcards .pilot-detail-head{align-items:flex-start!important;gap:12px!important}#pilotcards .pilot-detail-head img,#pilotcards .pilot-detail-head>.placeholder{width:72px!important;height:90px!important}#pilotcards .pilot-detail-stats{grid-template-columns:repeat(2,1fr)!important}.cka-next-date{font-size:22px}}
+    @media(max-width:680px){header.top{height:auto!important;min-height:64px!important;padding:8px 16px!important;flex-wrap:wrap!important}header.top .tabs{width:100%;margin:0!important;justify-content:flex-start!important}.cka-home-layout{margin:16px 0 24px!important}body.cka-home-active .cka-home-layout{grid-template-columns:1fr!important;gap:12px!important}.cka-home-layout>.hero{min-height:300px!important}#pilotcards .pilot-team-grid{scroll-snap-type:x proximity!important}#pilotcards .pilot-team-grid .pilot-card{scroll-snap-align:start!important}#pilotcards .pilot-card{flex-basis:175px!important;width:175px!important}}
+    @media(max-width:480px){header.top .tabs{gap:1px!important}header.top .tab{padding:10px 17px!important;font-size:11px!important}.cka-home-layout>.hero{min-height:270px!important;padding:24px 18px!important}#pilotcards .pilot-team-grid{gap:10px!important}#pilotcards .pilot-card{flex-basis:155px!important;width:155px!important;padding:8px!important}#pilotcards .pilot-card img,#pilotcards .pilot-card>.placeholder{height:150px!important}#pilotcards .pilot-detail-head{align-items:flex-start!important;gap:12px!important}#pilotcards .pilot-detail-head img,#pilotcards .pilot-detail-head>.placeholder{width:72px!important;height:90px!important}#pilotcards .pilot-detail-stats{grid-template-columns:repeat(2,1fr)!important}.cka-next-date{font-size:22px}}
     #classification .scroll,#teams .scroll,#teams .teams{border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important}
-    #classification .row:not(.headrow),#teams .teamrow:not(.headrow){border:0!important;border-bottom:1px solid var(--border)!important;border-radius:0!important;background:var(--surface)!important;color:var(--text-primary)!important;box-shadow:none!important}
+    #classification .row:not(.headrow),#teams .teamrow:not(.headrow){border:0!important;border-bottom:1px solid var(--border)!important;border-radius:0!important;background:#11151b!important;color:var(--text-primary)!important;box-shadow:none!important}
+    #classification .row .team[data-team-color]{position:relative!important;display:inline-flex!important;align-items:center!important;min-height:18px!important;padding-left:11px!important;color:#a5adba!important}
+    #classification .row .team[data-team-color]:before{position:absolute!important;top:2px!important;bottom:2px!important;left:0!important;width:3px!important;border-radius:3px!important;background:var(--row-team-color)!important;content:""}
     #classification .row.headrow,#teams .teamrow.headrow{border:0!important;border-bottom:1px solid var(--border)!important;border-radius:0!important;background:rgba(255,255,255,.035)!important;color:var(--text-muted)!important}
-    #classification .row:not(.headrow):hover,#teams .teamrow:not(.headrow):hover{background:var(--surface-hover)!important}
+    #classification .row:not(.headrow):hover,#teams .teamrow:not(.headrow):hover{background:#191e26!important}
     #classification .pilot strong,#teams .teamrow strong,#teams .teamrow b{color:#fff!important}
     #classification .team,#teams .teamrow>span:last-child{color:#a5adba!important}
     #classification .points,#teams .points{color:var(--gold)!important}
@@ -412,6 +514,8 @@ try {
     #teams .team-score-pilot{display:flex!important;align-items:center!important;gap:8px!important;color:#fff!important;font-weight:700!important}
     #teams .team-score-pilot img,#teams .team-score-pilot .placeholder{display:block!important;width:30px!important;height:30px!important;min-width:30px!important;flex:0 0 30px!important;border-radius:50%!important;object-fit:cover!important}
     #teams .team-score-table td{color:#e8eaf0!important}
+    #teams .team-score-table td.team-score-counted{background:linear-gradient(180deg,rgba(212,175,55,.18),rgba(212,175,55,.07))!important;color:#ffe48a!important;font-weight:900!important;box-shadow:inset 0 2px 0 rgba(255,218,95,.42)}
+    #teams .team-score-table td.team-score-counted:after{content:' ✓';color:#f3d36d;font-size:9px}
     #teams .team-score-table .team-score-total td{color:var(--gold)!important;font-weight:800!important;border-top:1px solid rgba(212,175,55,.35)!important}
     #teams .team-score-table .penalty-mark{display:inline-flex!important;width:14px;height:14px;align-items:center;justify-content:center;margin-left:3px;border-radius:50%;background:#7f1d1d;color:#fecaca;font-size:10px;font-weight:900;vertical-align:1px}
     @media(max-width:560px){#teams .teamrow:not(.headrow){grid-template-columns:42px minmax(0,1fr) 62px!important;gap:6px!important;padding:12px 8px!important}#teams .teamrow.headrow{grid-template-columns:42px minmax(0,1fr) 62px!important;padding:10px 8px!important}#teams .team-member-strip{gap:10px!important}#teams .team-member img,#teams .team-member .placeholder{width:38px!important;height:38px!important;min-width:38px!important;flex-basis:38px!important}#teams .team-score-table{min-width:1040px!important}#teams .team-score-table th:first-child,#teams .team-score-table td:first-child{min-width:155px!important}}
@@ -452,7 +556,9 @@ try {
       #classification.table{width:100%!important;min-width:0!important}
       #classification .row.headrow,#classification .row:not(.headrow){display:grid!important;width:100%!important;min-width:0!important;grid-template-columns:38px minmax(0,1fr) 64px!important;gap:8px!important;align-items:center!important}
       #classification .row.headrow{min-height:40px!important;padding:8px 10px!important;background:rgba(255,255,255,.035)!important}
-      #classification .row:not(.headrow){min-height:62px!important;padding:9px 10px!important;margin:0!important;border:0!important;border-bottom:1px solid rgba(255,255,255,.08)!important;border-radius:0!important;overflow:hidden!important;background:transparent!important}
+      #classification .row:not(.headrow){min-height:62px!important;padding:9px 10px!important;margin:0!important;border:0!important;border-bottom:1px solid rgba(255,255,255,.08)!important;border-radius:0!important;overflow:hidden!important;background:#11151b!important}
+      #classification .row:not(.headrow)>.team[data-team-color]{position:relative!important;padding-left:11px!important;color:#a5adba!important}
+      #classification .row:not(.headrow)>.team[data-team-color]:before{position:absolute!important;top:2px!important;bottom:2px!important;left:0!important;width:3px!important;border-radius:3px!important;background:var(--row-team-color)!important;content:""!important}
       #classification .row.headrow>:nth-child(3),#classification .row:not(.headrow)>.team,#classification .row:not(.headrow)>.stage,#classification .row:not(.headrow)>:nth-child(n+16){display:none!important}
       #classification .row.headrow>:nth-child(n+5){display:none!important}
       #classification .row.headrow>:nth-child(4),#classification .row:not(.headrow)>:nth-child(4){display:block!important}
@@ -498,8 +604,57 @@ try {
       #teams .team-score-mobile-row>span strong{overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important}
       #teams .team-score-mobile-row img,#teams .team-score-mobile-row .placeholder{width:28px!important;height:28px!important;min-width:28px!important;flex:0 0 28px!important;border-radius:50%!important;object-fit:cover!important}
       #teams .team-score-mobile-row>b{display:flex!important;align-items:center!important;justify-content:flex-end!important;gap:3px!important;min-width:32px!important;color:var(--text-primary)!important;font-size:12px!important}
+      #teams .team-score-mobile-row.is-counted{margin:0 -6px!important;padding:4px 6px!important;border-radius:6px!important;background:rgba(212,175,55,.12)!important;border-bottom-color:rgba(212,175,55,.26)!important}
+      #teams .team-score-mobile-row.is-counted>b{color:#ffe48a!important;font-weight:900!important}
+      #teams .team-score-mobile-row.is-counted>b:after{content:'✓ soma';margin-left:5px;color:#f3d36d;font-size:8px;font-weight:800;white-space:nowrap}
       #teams .team-score-mobile-total{display:flex!important;justify-content:space-between!important;gap:8px!important;padding-top:8px!important;color:var(--gold)!important;font-size:11px!important}
       #teams .team-score-mobile-total b{font-size:14px!important}
+    }
+    @media(max-width:680px){
+      .cka-season-podium{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:6px!important;overflow:visible!important;align-items:end!important;padding:6px 0 12px!important;scroll-snap-type:none!important}
+      .cka-podium-card,.cka-podium-card[data-rank="1"],.cka-podium-card[data-rank="3"]{width:100%!important;min-width:0!important;height:164px!important;padding:10px 8px!important;scroll-snap-align:none!important;border-radius:9px!important}
+      .cka-podium-card[data-rank="1"]{height:176px!important}
+      .cka-podium-card[data-rank="3"]{height:154px!important}
+      .cka-podium-card-top{gap:3px!important}
+      .cka-podium-rank{font-size:21px!important}
+      .cka-podium-avatar{width:72%!important;max-width:72%!important;opacity:.92!important}
+      .cka-podium-copy{width:88%!important;max-width:88%!important}
+      .cka-podium-name{font-size:clamp(10px,2.8vw,14px)!important;line-height:1.08!important;overflow-wrap:anywhere!important}
+      .cka-podium-team{font-size:clamp(8px,2vw,10px)!important;line-height:1.15!important;overflow-wrap:anywhere!important}
+      .cka-podium-score{margin-top:8px!important;font-size:16px!important}
+      .cka-podium-score small{font-size:8px!important}
+      .cka-podium-card.is-team .cka-team-crest{width:32px!important;height:32px!important;font-size:13px!important}
+    }
+    @media(max-width:380px){
+      .cka-season-podium{gap:4px!important}
+      .cka-podium-card,.cka-podium-card[data-rank="1"],.cka-podium-card[data-rank="3"]{padding:8px 6px!important}
+      .cka-podium-copy{width:94%!important;max-width:94%!important}
+      .cka-podium-name{font-size:10px!important}
+      .cka-podium-score{font-size:14px!important}
+    }
+    @media(max-width:680px){
+      #classificacao .scroll{position:relative!important;width:100%!important;max-width:100%!important;max-height:none!important;overflow-x:auto!important;overflow-y:hidden!important;overscroll-behavior-x:contain!important;touch-action:pan-x pan-y!important;-webkit-overflow-scrolling:touch!important;border:1px solid rgba(255,255,255,.08)!important;border-radius:9px!important;background:#11151b!important}
+      #classificacao #classification.table{display:block!important;width:1521px!important;min-width:1521px!important;max-width:none!important;overflow:visible!important}
+      #classificacao #classification .row.headrow,#classificacao #classification .row:not(.headrow){display:grid!important;box-sizing:border-box!important;width:1521px!important;min-width:1521px!important;max-width:none!important;grid-template-columns:64px 220px 132px 72px repeat(11,68px) 65px 78px 66px 76px!important;grid-auto-flow:row!important;column-gap:0!important;align-items:center!important}
+      #classificacao #classification .row.headrow>:nth-child(3),#classificacao #classification .row.headrow>:nth-child(n+5),#classificacao #classification .row:not(.headrow)>.team,#classificacao #classification .row:not(.headrow)>.stage,#classificacao #classification .row:not(.headrow)>:nth-child(n+16){display:block!important}
+      #classificacao #classification .row.headrow{min-height:42px!important;padding:7px 0!important}
+      #classificacao #classification .row:not(.headrow){min-height:58px!important;padding:6px 0!important;overflow:visible!important}
+      #classificacao #classification .row.headrow>*{display:block!important;min-width:0!important;padding:0 7px!important;font-size:9px!important;text-align:center!important;white-space:normal!important;overflow-wrap:anywhere!important}
+      #classificacao #classification .row.headrow>:nth-child(2),#classificacao #classification .row.headrow>:nth-child(3){text-align:left!important}
+      #classificacao #classification .row:not(.headrow)>*{display:block!important;min-width:0!important;padding:0 6px!important;text-align:center!important;white-space:normal!important;overflow-wrap:anywhere!important;font-size:11px!important}
+      #classificacao #classification .row:not(.headrow)>.pos{grid-column:1!important;grid-row:1!important;justify-self:center!important;font-size:13px!important;font-weight:900!important}
+      #classificacao #classification .row:not(.headrow)>.pilot{grid-column:2!important;grid-row:1!important;display:flex!important;min-width:0!important;max-width:none!important;gap:8px!important;overflow:hidden!important;text-align:left!important;white-space:normal!important}
+      #classificacao #classification .row:not(.headrow)>.pilot strong{display:block!important;min-width:0!important;overflow:hidden!important;font-size:12px!important;text-overflow:ellipsis!important;white-space:nowrap!important}
+      #classificacao #classification .row:not(.headrow)>.pilot small:not(.pilot-ledger){display:none!important}
+      #classificacao #classification .row:not(.headrow)>.pilot .pilot-ledger{display:none!important}
+      #classificacao #classification .row:not(.headrow)>.pilot .avatar,#classificacao #classification .row:not(.headrow)>.pilot .placeholder{width:36px!important;height:36px!important;min-width:36px!important;flex:0 0 36px!important}
+      #classificacao #classification .row:not(.headrow)>.team[data-team-color]{grid-column:3!important;grid-row:1!important;display:inline-flex!important;justify-self:start!important;width:max-content!important;max-width:100%!important;padding-left:13px!important;overflow:hidden!important;text-align:left!important;text-overflow:ellipsis!important;white-space:nowrap!important;font-size:10px!important}
+      #classificacao #classification .row:not(.headrow)>b.points{grid-column:4!important;grid-row:1!important;display:block!important;visibility:visible!important;opacity:1!important;justify-self:center!important;color:#f3d36d!important;font-size:14px!important;font-weight:900!important;text-align:center!important}
+      #classificacao #classification .row:not(.headrow)>.stage{display:flex!important;min-height:38px!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;gap:2px!important;font-size:11px!important}
+      #classificacao #classification .row:not(.headrow)>.stage small{display:block!important;color:#a5adba!important;font-size:8px!important;white-space:nowrap!important}
+      #classificacao #classification .row:not(.headrow)>.bonus,#classificacao #classification .row:not(.headrow)>.penalty-total,#classificacao #classification .row:not(.headrow)>.discard{display:block!important;font-size:10px!important}
+      #classificacao #classification .row.headrow>:nth-child(18),#classificacao #classification .row:not(.headrow)>:nth-child(18){box-sizing:border-box!important;width:66px!important;min-width:66px!important;max-width:66px!important;white-space:nowrap!important}
+      #classificacao #classification .row.headrow>:nth-child(19),#classificacao #classification .row:not(.headrow)>:nth-child(19){box-sizing:border-box!important;width:76px!important;min-width:76px!important;max-width:76px!important;overflow:visible!important;overflow-wrap:normal!important;word-break:keep-all!important;writing-mode:horizontal-tb!important;text-align:center!important;white-space:nowrap!important}
     }
   `;
   const hero=document.querySelector('.hero');
@@ -593,6 +748,9 @@ try {
   const videosBox = makePanel('cka-videos', 'Vídeos dos pilotos', 'Vídeos publicados no YouTube.');
   const adminBox = makePanel('cka-admin', 'Administração CKA', 'Acesso restrito ao administrador.');
   makeTab('cka-grid', 'Grid'); makeTab('cka-calendario', 'Calendário'); makeTab('cka-fotos', 'Fotos'); makeTab('cka-videos', 'Vídeos'); makeTab('cka-admin', 'Admin');
+  const regulationBox = makePanel('cka-regulamento', 'Regulamento do Campeonato', 'Copa Clube Kart dos Amigos 2026 · 19ª edição.');
+  makeTab('cka-regulamento', 'Regulamento');
+  regulationBox.innerHTML = `<div class="cka-regulation-intro"><div><strong>Regulamento oficial da temporada 2026</strong>Documento completo da Copa Clube Kart dos Amigos, com formato, calendário, pontuação, regras de grid, conduta e demais disposições.</div><div class="cka-regulation-actions"><a href="assets/regulamento-cka-2026.pdf" target="_blank" rel="noopener">Abrir em nova aba</a><a href="assets/regulamento-cka-2026.pdf" download>Baixar PDF</a></div></div><iframe class="cka-regulation-frame" src="assets/regulamento-cka-2026.pdf" title="Regulamento oficial da Copa Clube Kart dos Amigos 2026" loading="lazy"></iframe>`;
   const state = { admin: false, user: null, races: [], pilots: [], teams: [], initialized: false, editingPilotId: null };
   const photoLightbox=document.createElement('dialog');
   photoLightbox.className='cka-photo-lightbox';
@@ -698,6 +856,77 @@ try {
     }).sort((a,b)=>b.finalPoints-a.finalPoints||a.pilot_number-b.pilot_number);
     return rank;
   }
+  function teamRankingForRaces(races){
+    const raceIds=new Set(races.map(race=>race.id)),pilotById=new Map(publicState.pilots.map(pilot=>[pilot.id,pilot]));
+    const ranked=new Map(publicState.teams.map(team=>[team.id,{team,total:0,rounds:new Map(),pilotScores:new Map()}]));
+    for(const race of races){
+      const grouped=new Map();
+      for(const row of publicState.stagePoints){
+        if(row.race_id!==race.id)continue;
+        const teamId=row.team_id||pilotById.get(row.pilot_id)?.default_team_id;
+        if(!teamId||!ranked.has(teamId))continue;
+        if(!grouped.has(teamId))grouped.set(teamId,[]);
+        grouped.get(teamId).push(row);
+      }
+      for(const [teamId,entries] of grouped){
+        const position=row=>row.finish_position==null?Number.POSITIVE_INFINITY:Number(row.finish_position);
+        const counted=[...entries].sort((a,b)=>position(a)-position(b)||(Number(b.race_points)||0)-(Number(a.race_points)||0)).slice(0,2);
+        const team=ranked.get(teamId),round=Number(race.round_number),points=counted.reduce((sum,row)=>sum+(Number(row.race_points)||0)-(Number(row.penalty_points)||0),0);
+        team.total+=points;team.rounds.set(round,{points,drivers:counted,rows:entries});
+        for(const row of entries){
+          const pilot=pilotById.get(row.pilot_id);if(!pilot)continue;
+          if(!team.pilotScores.has(pilot.id))team.pilotScores.set(pilot.id,{pilot,rounds:new Map()});
+          team.pilotScores.get(pilot.id).rounds.set(round,row);
+        }
+      }
+    }
+    return [...ranked.values()].sort((a,b)=>b.total-a.total||a.team.name.localeCompare(b.team.name,'pt-BR'));
+  }
+  function renderSeasonShowcase(pilots,races){
+    const section=document.querySelector('#classificacao'),tableWrap=section?.querySelector('.scroll');if(!section||!tableWrap)return;
+    let showcase=document.querySelector('#cka-season-showcase');
+    if(!showcase){
+      showcase=document.createElement('section');showcase.id='cka-season-showcase';showcase.className='cka-season-showcase';showcase.setAttribute('aria-label','Destaques da temporada');
+      showcase.innerHTML='<div class="cka-season-showcase-head"><h2 class="cka-season-showcase-title">Temporada <span>2026</span></h2><div class="cka-season-switch" role="group" aria-label="Classificação da temporada"><button type="button" data-season-mode="pilots" aria-pressed="true">Pilotos</button><button type="button" data-season-mode="teams" aria-pressed="false">Equipes</button></div></div><div class="cka-season-podium" aria-live="polite"></div><div class="cka-season-team-table" hidden></div>';
+      tableWrap.parentElement.insertBefore(showcase,section.querySelector('.note')||tableWrap);
+      showcase.addEventListener('click',event=>{
+        const modeButton=event.target.closest('[data-season-mode]');
+        if(modeButton){homeStandingsMode=modeButton.dataset.seasonMode;renderLiveStandings();return;}
+        const teamButton=event.target.closest('[data-season-team-toggle]');if(!teamButton)return;
+        const teamId=teamButton.dataset.seasonTeamToggle,expanded=!expandedTeamIds.has(teamId);
+        if(expanded)expandedTeamIds.add(teamId);else expandedTeamIds.delete(teamId);
+        teamButton.setAttribute('aria-expanded',String(expanded));
+        const panel=document.getElementById(teamButton.getAttribute('aria-controls'));if(panel)panel.hidden=!expanded;
+        const icon=teamButton.querySelector('.cka-season-team-toggle-mark');if(icon)icon.textContent=expanded?'−':'+';
+      });
+    }
+    const racesWithResults=races.filter(race=>race.status==='completed'&&race.results_published),topPilots=pilots.slice(0,3),topTeams=teamRankingForRaces(racesWithResults);
+    showcase.querySelectorAll('[data-season-mode]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.seasonMode===homeStandingsMode)));
+    const podium=showcase.querySelector('.cka-season-podium'),teamTable=showcase.querySelector('.cka-season-team-table');
+    const orderedPilots=topPilots.length===3?[topPilots[1],topPilots[0],topPilots[2]]:topPilots;
+    const teamColors={'EFK':['#07594f','#00a98e'],'Red Bull':['#101d55','#3158ba'],'McLaren':['#813300','#ef7622'],'Ferrari':['#75151b','#dd2939'],'Miro - Stop & Go':['#3c285e','#895fbe'],'Miro - Stop and Go':['#3c285e','#895fbe']};
+    const pilotCards=orderedPilots.map(pilot=>{const rank=topPilots.indexOf(pilot)+1,team=pilot.teamName||'Sem equipe',colors=teamColors[team]||['#17415c','#277da1'],portrait=avatarMarkup(pilot).replace('class="avatar"','class="avatar cka-podium-avatar"');return `<article class="cka-podium-card" data-rank="${rank}" style="--podium-dark:${colors[0]};--podium-light:${colors[1]}"><div class="cka-podium-card-top"><span class="cka-podium-rank">${rank}<small>º</small></span>${portrait}</div><div class="cka-podium-copy"><strong class="cka-podium-name">${html(pilot.display_name)}</strong><span class="cka-podium-team">${html(team)}</span><b class="cka-podium-score">${pilot.finalPoints}<small> PTS</small></b></div></article>`;}).join('');
+    const orderedTeams=topTeams.length>=3?[topTeams[1],topTeams[0],topTeams[2]]:topTeams.slice(0,3);
+    const teamCards=orderedTeams.map(entry=>{const rank=topTeams.indexOf(entry)+1,colors=teamColors[entry.team.name]||['#17415c','#277da1'],initials=entry.team.name.split(/\s+/).slice(0,2).map(word=>word[0]).join('').toUpperCase();return `<article class="cka-podium-card is-team" data-rank="${rank}" style="--podium-dark:${colors[0]};--podium-light:${colors[1]}"><div class="cka-podium-card-top"><span class="cka-podium-rank">${rank}<small>º</small></span><span class="cka-team-crest" aria-hidden="true">${html(initials)}</span></div><div class="cka-podium-copy"><strong class="cka-podium-name">${html(entry.team.name)}</strong><span class="cka-podium-team">Pontuação acumulada</span><b class="cka-podium-score">${entry.total}<small> PTS</small></b></div></article>`;}).join('');
+    podium.innerHTML=homeStandingsMode==='pilots'?(pilotCards||'<p class="cka-standings-empty">Ainda não há classificação disponível.</p>'):(teamCards||'<p class="cka-standings-empty">Ainda não há equipes classificadas.</p>');
+    teamTable.hidden=homeStandingsMode!=='teams';
+    tableWrap.hidden=homeStandingsMode==='teams';
+    if(homeStandingsMode==='teams')teamTable.innerHTML='<div class="cka-season-team-row cka-season-team-head"><span>Pos.</span><span>Equipe</span><span>Pontos</span></div>'+topTeams.map((entry,index)=>{
+      const expanded=expandedTeamIds.has(entry.team.id),panelId=`cka-season-team-details-${html(entry.team.id)}`;
+      const stageHeaders=Array.from({length:11},(_,i)=>`<th scope="col">Etapa ${i+1}</th>`).join('');
+      const pilotRows=[...entry.pilotScores.values()].sort((a,b)=>a.pilot.display_name.localeCompare(b.pilot.display_name,'pt-BR')).map(({pilot,rounds,total})=>{
+        const cells=Array.from({length:11},(_,i)=>{
+          const round=i+1,row=rounds.get(round);if(!row)return '<td>—</td>';
+          const net=(Number(row.race_points)||0)-(Number(row.penalty_points)||0),counted=entry.rounds.get(round)?.drivers.some(driver=>driver.pilot_id===pilot.id),warning=Number(row.penalty_points)>0?'<span class="penalty-mark" title="Advertência: pontuação líquida reduzida">!</span>':'';
+          return `<td class="${counted?'team-score-counted':''}"${counted?' title="Pontuação somada no total da equipe"':''}>${net}${warning}</td>`;
+        }).join('');
+        return `<tr><th scope="row"><span class="team-score-pilot">${avatarMarkup(pilot)}${html(pilot.display_name)}</span></th>${cells}<td><strong>${total}</strong></td></tr>`;
+      }).join('');
+      const teamCells=Array.from({length:11},(_,i)=>{const score=entry.rounds.get(i+1);return `<td>${score?score.points:'—'}</td>`;}).join('');
+      const scoreTable=`<div class="team-score-table-wrap"><table class="team-score-table"><thead><tr><th scope="col">Piloto</th>${stageHeaders}<th scope="col">Total piloto</th></tr></thead><tbody>${pilotRows}<tr class="team-score-total"><th scope="row">Total da equipe (2 melhores)</th>${teamCells}<td>${entry.total}</td></tr></tbody></table></div>`;
+      return `<section class="cka-season-team-entry"><div class="cka-season-team-row"><b>${index+1}º</b><button type="button" class="cka-season-team-toggle" data-season-team-toggle="${html(entry.team.id)}" aria-controls="${panelId}" aria-expanded="${expanded}"><span class="cka-season-team-name">${html(entry.team.name)}</span><span class="cka-season-team-toggle-mark" aria-hidden="true">${expanded?'−':'+'}</span></button><strong>${entry.total}</strong></div><div class="cka-season-team-dropdown" id="${panelId}"${expanded?'':' hidden'}>${scoreTable||'<p class="cka-muted">Ainda não há etapas publicadas.</p>'}<p class="cka-season-team-legend">As células destacadas indicam as duas pontuações somadas em cada etapa.</p></div></section>`;
+    }).join('');
+  }
   function renderLiveStandings() {
     const root = document.querySelector('#classification'); if (!root) return;
     const races = publicState.races.filter(r => r.status === 'completed' && r.results_published);
@@ -724,8 +953,9 @@ try {
       return { ...pilot, stats, teamName: team?.name || 'Sem equipe', byRound, discarded, podiums, wins: Number(stats.wins) || 0, finalPoints };
     }).sort((a,b) => b.finalPoints - a.finalPoints || a.pilot_number - b.pilot_number);
     const previousRaces=races.slice(0,-1),previousRanking=rankingForRaces(previousRaces),previousPlace=new Map(previousRanking.map((pilot,index)=>[pilot.id,index+1]));
+    const teamColors={'EFK':['#07594f','#00a98e'],'Red Bull':['#101d55','#3158ba'],'McLaren':['#813300','#ef7622'],'Ferrari':['#75151b','#dd2939'],'Miro - Stop & Go':['#3c285e','#895fbe'],'Miro - Stop and Go':['#3c285e','#895fbe']};
     const heading = ['Pos. / Δ etapa','Piloto','Equipe','Pontos',...Array.from({length:11},(_,i)=>`Etapa ${i+1}`),'Bônus','Pontos perdidos','Descarte 1','Descarte 2'];
-    const header = `<div class="row headrow">${heading.map(label=>`<span>${html(label)}</span>`).join('')}</div>`;
+    const header = `<div class="row headrow">${heading.map((label,index)=>`<span style="grid-column:${index+1};grid-row:1">${html(label)}</span>`).join('')}</div>`;
     const rows = pilots.map((pilot,index) => {
       const stages = Array.from({length:11},(_,i)=>{
         const round=i+1, entry=pilot.byRound.get(round), race=races.find(item=>item.round_number===round);
@@ -733,7 +963,7 @@ try {
         const points=entry ? (Number(entry.race_points)||0)-(Number(entry.penalty_points)||0) : 0;
         const warning=entry&&Number(entry.penalty_points)>0?'<span class="penalty-mark" title="Advertência: pontuação reduzida" aria-label="Recebeu advertência">!</span>':'';
         const klass=pos==='1º'?'gold':pos==='2º'?'silver':pos==='3º'?'bronze':pos==='—'?'future':'';
-        return `<span class="stage ${klass}" data-label="Etapa ${round}"><span>${pos}</span>${race?`<small>${points} pts${warning}</small>`:''}</span>`;
+        return `<span class="stage ${klass}" data-label="Etapa ${round}" style="grid-column:${round+4};grid-row:1"><span>${pos}</span>${race?`<small>${points} pts${warning}</small>`:''}</span>`;
       }).join('');
       const bonus=Number(pilot.stats.bonus_points)||0, penalty=Number(pilot.stats.penalty_points)||0;
       const discardValues=[...pilot.discarded].map(Number).map(round=>{
@@ -743,10 +973,13 @@ try {
       const ledger=`Total ${pilot.finalPoints} pts · Bônus +${bonus} · Advertências ${penaltyDisplay} pts · Descartes ${discardValues[0] ?? '—'} / ${discardValues[1] ?? '—'}`;
       const oldPlace=previousPlace.get(pilot.id),movement=oldPlace==null?null:oldPlace-(index+1);
       const movementBadge=movement==null?'':`<span class="cka-rank-move cka-position-change ${movement>0?'cka-position-gain':movement<0?'cka-position-loss':'cka-position-same'}" title="${movement>0?'Subiu':movement<0?'Caiu':'Manteve'} em relação à etapa anterior">${movement>0?'+':''}${movement}</span>`;
-      const row=`<div class="row" data-pilot-id="${html(pilot.id)}"><b class="pos" data-label="Pos.">${index+1}º${movementBadge}</b><div class="pilot" data-label="Piloto">${avatarMarkup(pilot)}<span><strong>${html(pilot.display_name)}</strong><small>${index===0?'Líder do campeonato':''}</small><small class="pilot-ledger">${html(ledger)}</small></span></div><span class="team" data-label="Equipe">${html(pilot.teamName)}</span><b class="points" data-label="Pontos">${pilot.finalPoints}</b>${stages}<span class="bonus" data-label="Bônus">+${bonus}</span><span class="penalty-total" data-label="Pontos perdidos">${penaltyDisplay}</span><span class="discard" data-label="Descarte 1">${discardValues[0] ?? '—'}</span><span class="discard" data-label="Descarte 2">${discardValues[1] ?? '—'}</span></div>`;
+      const teamColor=(teamColors[pilot.teamName]||['#17415c','#277da1'])[1];
+      const row=`<div class="row" data-pilot-id="${html(pilot.id)}"><b class="pos" data-label="Pos." style="grid-column:1;grid-row:1">${index+1}º${movementBadge}</b><div class="pilot" data-label="Piloto" style="grid-column:2;grid-row:1">${avatarMarkup(pilot)}<span><strong>${html(pilot.display_name)}</strong><small>${index===0?'Líder do campeonato':''}</small><small class="pilot-ledger">${html(ledger)}</small></span></div><span class="team" data-label="Equipe" data-team-color style="grid-column:3;grid-row:1;--row-team-color:${teamColor}">${html(pilot.teamName)}</span><b class="points" data-label="Pontos" style="grid-column:4;grid-row:1">${pilot.finalPoints}</b>${stages}<span class="bonus" data-label="Bônus" style="grid-column:16;grid-row:1">+${bonus}</span><span class="penalty-total" data-label="Pontos perdidos" style="grid-column:17;grid-row:1">${penaltyDisplay}</span><span class="discard" data-label="Descarte 1" style="grid-column:18;grid-row:1">${discardValues[0] ?? '—'}</span><span class="discard" data-label="Descarte 2" style="grid-column:19;grid-row:1">${discardValues[1] ?? '—'}</span></div>`;
       return row;
     }).join('');
     replaceHTML(root,header+rows);
+    const classificationScroll=root.closest('.scroll');if(classificationScroll)classificationScroll.scrollLeft=0;
+    renderSeasonShowcase(pilots,races);
     const meta=document.querySelector('#classificacao .head>p'); if(meta)meta.textContent=`${pilots.length} pilotos · ${races.length} etapas publicadas · Δ = variação vs. etapa anterior`;
   }
   function renderLiveTeams() {
@@ -787,10 +1020,11 @@ try {
       const stageHeaders=Array.from({length:11},(_,i)=>`<th scope="col">Etapa ${i+1}</th>`).join('');
       const pilotRows=[...entry.pilotScores.values()].sort((a,b)=>a.pilot.display_name.localeCompare(b.pilot.display_name,'pt-BR')).map(({pilot,rounds,total})=>{
         const cells=Array.from({length:11},(_,i)=>{
-          const item=rounds.get(i+1);if(!item)return '<td>—</td>';
+          const round=i+1,item=rounds.get(round);if(!item)return '<td>—</td>';
           const net=(Number(item.race_points)||0)-(Number(item.penalty_points)||0);
           const warning=Number(item.penalty_points)>0?'<span class="penalty-mark" title="Advertência: pontuação líquida reduzida" aria-label="Recebeu advertência">!</span>':'';
-          return `<td>${net}${warning}</td>`;
+          const counted=entry.rounds.get(round)?.drivers.some(driver=>driver.pilot_id===pilot.id);
+          return `<td class="${counted?'team-score-counted':''}"${counted?' title="Pontuação somada no total da equipe"':''}>${net}${warning}</td>`;
         }).join('');
         return `<tr><th scope="row"><span class="team-score-pilot">${avatarMarkup(pilot)}${html(pilot.display_name)}</span></th>${cells}<td><strong>${total}</strong></td></tr>`;
       }).join('');
@@ -801,7 +1035,8 @@ try {
         const rows=[...entry.pilotScores.values()].sort((a,b)=>a.pilot.display_name.localeCompare(b.pilot.display_name,'pt-BR')).map(({pilot,rounds})=>{
           const item=rounds.get(round),net=item?(Number(item.race_points)||0)-(Number(item.penalty_points)||0):null;
           const warning=item&&Number(item.penalty_points)>0?'<span class="penalty-mark" title="Advertência" aria-label="Recebeu advertência">!</span>':'';
-          return `<div class="team-score-mobile-row"><span>${avatarMarkup(pilot)}<strong>${html(pilot.display_name)}</strong></span><b>${net===null?'—':net}${warning}</b></div>`;
+          const counted=!!item&&!!teamRound?.drivers.some(driver=>driver.pilot_id===pilot.id);
+          return `<div class="team-score-mobile-row${counted?' is-counted':''}"><span>${avatarMarkup(pilot)}<strong>${html(pilot.display_name)}</strong></span><b>${net===null?'—':net}${warning}</b></div>`;
         }).join('');
         return `<section class="team-score-stage"><h4>Etapa ${round} <span>${html(race.venue||'')}</span></h4>${rows}<div class="team-score-mobile-total"><strong>Total da equipe (2 melhores)</strong><b>${teamRound?teamRound.points:'—'}</b></div></section>`;
       }).join('')||'<p class="team-muted">Ainda não há etapas publicadas.</p>';
@@ -811,19 +1046,18 @@ try {
     }).join(''));
     const liveTeamIds=new Set(ranked.map(entry=>entry.team.id));
     [...expandedTeamIds].forEach(id=>{if(!liveTeamIds.has(id))expandedTeamIds.delete(id);});
-    root.querySelectorAll('[data-team-toggle]').forEach(button=>{
-      if(boundTeamButtons.has(button))return;
-      boundTeamButtons.add(button);
-      button.addEventListener('click',()=>{
-        const teamId=button.dataset.teamToggle;
-        const expanded=!expandedTeamIds.has(teamId);
+    if(!root.dataset.teamToggleBound){
+      root.dataset.teamToggleBound='true';
+      root.addEventListener('click',event=>{
+        const button=event.target.closest('button[data-team-toggle]');if(!button||!root.contains(button))return;
+        const teamId=button.dataset.teamToggle,expanded=!expandedTeamIds.has(teamId);
         if(expanded)expandedTeamIds.add(teamId);else expandedTeamIds.delete(teamId);
         button.setAttribute('aria-expanded',String(expanded));
         const panel=document.getElementById(button.getAttribute('aria-controls'));
         if(panel)panel.hidden=!expanded;
         const mark=button.querySelector('.team-toggle-mark');if(mark)mark.textContent=expanded?'−':'+';
       });
-    });
+    }
   }
   function renderLivePilots() {
     const root=document.querySelector('#pilotcards');if(!root)return;
@@ -839,7 +1073,11 @@ try {
       const total=points.reduce((sum,row)=>sum+scoreOf(row),0)+points.reduce((sum,row)=>sum+(Number(row.bonus_points)||0),0)-discarded.reduce((sum,row)=>sum+(Number(row.race_points)||0),0);
       return {...pilot,stats,points:total,wins:Number(stats.wins)||0,podiums:points.filter(row=>row.result_status==='finished'&&Number(row.finish_position)<=5).length,starts:Number(stats.starts)||0};
     }).sort((a,b)=>b.points-a.points||a.pilot_number-b.pilot_number);
-    replaceHTML(root,`<div class="pilot-grid">${ordered.map(p=>`<article class="pilot-card" data-pilot-id="${html(p.id)}">${avatarMarkup(p)}<h3>${html(p.display_name)}</h3><span class="team">${html(publicState.teams.find(t=>t.id===p.default_team_id)?.name||'Sem equipe')}</span><div class="pilot-detail-stats"><div><b>${p.points}</b><span>Pontos</span></div><div><b>${p.wins}</b><span>Vitórias</span></div><div><b>${p.podiums}</b><span>Pódios</span></div><div><b>${p.starts}</b><span>Etapas</span></div></div></article>`).join('')}</div>`);
+    const teamColors={'EFK':['#07594f','#00a98e'],'Red Bull':['#101d55','#3158ba'],'McLaren':['#813300','#ef7622'],'Ferrari':['#75151b','#dd2939'],'Miro - Stop & Go':['#3c285e','#895fbe'],'Miro - Stop and Go':['#3c285e','#895fbe']};
+    const grouped=new Map();
+    ordered.forEach(pilot=>{const teamName=publicState.teams.find(team=>team.id===pilot.default_team_id)?.name||'Sem equipe';if(!grouped.has(teamName))grouped.set(teamName,[]);grouped.get(teamName).push(pilot);});
+    const teamSections=[...grouped.entries()].map(([teamName,members])=>{const colors=teamColors[teamName]||['#17415c','#277da1'];const cards=members.map(p=>`<article class="pilot-card" data-pilot-id="${html(p.id)}" style="--pilot-team-dark:${colors[0]};--pilot-team-light:${colors[1]}">${avatarMarkup(p)}<h3>${html(p.display_name)}</h3><span class="team">${html(teamName)}</span><div class="pilot-detail-stats"><div><b>${p.points}</b><span>Pontos</span></div><div><b>${p.wins}</b><span>Vitórias</span></div><div><b>${p.podiums}</b><span>Pódios</span></div><div><b>${p.starts}</b><span>Etapas</span></div></div></article>`).join('');return `<section class="pilot-team-section" style="--pilot-team-dark:${colors[0]};--pilot-team-light:${colors[1]}"><h3 class="pilot-team-heading">${html(teamName)}<small>${members.length} ${members.length===1?'piloto':'pilotos'}</small></h3><div class="pilot-team-grid" style="--team-pilot-count:${members.length}">${cards}</div></section>`;}).join('');
+    replaceHTML(root,`<div class="pilot-grid">${teamSections}</div>`);
   }
   function renderLiveResults(selectedRound) {
     const buttonBox=document.querySelector('#resultbuttons'),resultBox=document.querySelector('#results');if(!buttonBox||!resultBox)return;
@@ -862,9 +1100,11 @@ try {
     const race=completed.find(r=>r.round_number===current);
     if(!race){replaceHTML(resultBox,'<p class="cka-muted">Ainda não há resultados publicados.</p>');return;}
     const rows=publicState.results.filter(row=>row.race_id===race.id).sort((a,b)=>(a.finish_position??999)-(b.finish_position??999));
-    replaceHTML(resultBox,'<div class="resultrow"><span>Posição</span><span>Piloto</span><span>Melhor volta</span><span>Diferença</span></div>'+rows.map(row=>{const pilot=publicState.pilots.find(p=>p.id===row.pilot_id)||{display_name:'Piloto'};const start=publicState.grid.find(item=>item.race_id===race.id&&item.pilot_id===row.pilot_id)?.starting_position;const finish=Number(row.finish_position);const delta=Number(start)>0&&finish>0?Number(start)-finish:null;const change=delta==null?'':`<span class="cka-position-change ${delta>0?'cka-position-gain':delta<0?'cka-position-loss':'cka-position-same'}" title="Largou em ${start}º">${delta>0?'+':''}${delta}</span>`;return `<div class="resultrow"><b>${row.finish_position?`${row.finish_position}º`:'—'}${change}</b><span class="result-pilot">${avatarMarkup(pilot)}<strong>${html(pilot.display_name)}</strong></span><span>${lapText(row.best_lap_ms)}</span><span>${html(row.gap_display||'—')}</span></div>`;}).join(''));
+    const teamColors={'EFK':'#00a98e','Red Bull':'#3158ba','McLaren':'#ef7622','Ferrari':'#dd2939','Miro - Stop & Go':'#895fbe','Miro - Stop and Go':'#895fbe'};
+    replaceHTML(resultBox,'<div class="resultrow"><span>Posição</span><span>Piloto · Equipe</span><span>Melhor volta</span><span>Diferença</span></div>'+rows.map(row=>{const pilot=publicState.pilots.find(p=>p.id===row.pilot_id)||{display_name:'Piloto'};const teamName=publicState.teams.find(team=>team.id===row.team_id)?.name||publicState.teams.find(team=>team.id===pilot.default_team_id)?.name||'Sem equipe',teamColor=teamColors[teamName]||'#738095';const start=publicState.grid.find(item=>item.race_id===race.id&&item.pilot_id===row.pilot_id)?.starting_position;const finish=Number(row.finish_position);const delta=Number(start)>0&&finish>0?Number(start)-finish:null;const change=delta==null?'':`<span class="cka-position-change ${delta>0?'cka-position-gain':delta<0?'cka-position-loss':'cka-position-same'}" title="Largou em ${start}º">${delta>0?'+':''}${delta}</span>`;return `<div class="resultrow"><b>${row.finish_position?`${row.finish_position}º`:'—'}${change}</b><span class="result-pilot">${avatarMarkup(pilot)}<span class="result-pilot-copy"><strong>${html(pilot.display_name)}</strong><small class="result-team" style="--row-team-color:${teamColor}">${html(teamName)}</small></span></span><span>${lapText(row.best_lap_ms)}</span><span>${html(row.gap_display||'—')}</span></div>`;}).join(''));
   }
   function renderPublicGrid(){
+    renderNextRaceBar();
     if(!gridBox)return;
     const today=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Sao_Paulo'}).format(new Date());
     const next=publicState.races.filter(race=>race.status==='scheduled'&&race.race_date>=today).sort((a,b)=>a.race_date.localeCompare(b.race_date))[0];
@@ -872,6 +1112,28 @@ try {
     if(!next||!rows.length){replaceHTML(gridBox,'<div class="cka-box"><p class="cka-muted">A formação da próxima etapa ainda não foi publicada. Volte em breve.</p></div>');return;}
     const date=new Date(`${next.race_date}T12:00:00`).toLocaleDateString('pt-BR',{day:'2-digit',month:'long',year:'numeric'});
     replaceHTML(gridBox,`<section class="cka-grid-hero"><span class="cka-grid-kicker">Etapa ${next.round_number} · Ordem oficial de largada</span><h3>O grid está definido.</h3><p class="cka-grid-meta">${html(date)} · ${html(next.venue)} · ${html(String(next.start_time||'').slice(0,5))} · ${html(next.location)}</p></section><div class="cka-grid-public">${rows.map(row=>{const pilot=publicState.pilots.find(item=>item.id===row.pilot_id);if(!pilot)return '';return `<article class="cka-grid-pilot"><b class="cka-grid-pilot-pos">P${row.starting_position}</b>${avatarMarkup(pilot)}<strong class="cka-grid-pilot-name">${html(pilot.display_name)}</strong></article>`;}).join('')}</div>`);
+  }
+  function renderNextRaceBar(){
+    const header=document.querySelector('header.top');if(!header)return;
+    let strip=document.querySelector('#cka-next-race-topbar');
+    if(!strip){
+      strip=document.createElement('div');strip.id='cka-next-race-topbar';strip.className='cka-next-race-topbar';strip.innerHTML='<div class="cka-next-race-inner"><div class="cka-next-race-info"><span class="cka-race-flag" aria-hidden="true"></span><div class="cka-next-race-copy"><span class="cka-next-race-kicker">Próxima etapa</span><strong class="cka-next-race-title">Consultando calendário…</strong><span class="cka-next-race-meta"></span></div></div><button type="button" class="cka-next-race-calendar">Ver calendário <span aria-hidden="true">›</span></button></div>';
+      header.insertAdjacentElement('afterend',strip);
+      const alignStickyOffset=()=>{strip.style.top=`${Math.round(header.getBoundingClientRect().height)}px`;};
+      alignStickyOffset();
+      if(typeof ResizeObserver==='function')new ResizeObserver(alignStickyOffset).observe(header);else window.addEventListener('resize',alignStickyOffset,{passive:true});
+      strip.querySelector('button').addEventListener('click',()=>document.querySelector('.tab[data-panel="cka-calendario"]')?.click());
+    }
+    const today=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Sao_Paulo'}).format(new Date());
+    const next=publicState.races.filter(race=>race.status==='scheduled'&&race.race_date&&race.race_date>=today).sort((a,b)=>a.race_date.localeCompare(b.race_date))[0];
+    const title=strip.querySelector('.cka-next-race-title'),meta=strip.querySelector('.cka-next-race-meta'),kicker=strip.querySelector('.cka-next-race-kicker');
+    if(!next){kicker.textContent='Próxima etapa';title.textContent='Data a confirmar';meta.textContent='Acompanhe as atualizações do calendário';return;}
+    const date=new Date(`${next.race_date}T12:00:00`).toLocaleDateString('pt-BR',{day:'2-digit',month:'short'}).replace('.','').toUpperCase();
+    const time=String(next.start_time||'').slice(0,5),venue=next.venue||'Local a confirmar',location=next.location||'';
+    kicker.textContent=`Próxima etapa · Etapa ${next.round_number}`;
+    title.textContent=`${date} · ${venue}`;
+    meta.textContent=[time,location].filter(Boolean).join(' · ');
+    strip.setAttribute('aria-label',`Próxima etapa, etapa ${next.round_number}, ${date}, ${venue}${location?`, ${location}`:''}`);
   }
   function renderHomeNews(){
     const box=document.querySelector('.cka-news-content');if(!box)return;
@@ -1366,4 +1628,5 @@ try {
   document.addEventListener('visibilitychange',()=>{if(!document.hidden)void refreshPublicData();});
   window.setInterval(()=>{if(!document.hidden)void refreshPublicData();},30000);
   db.auth.onAuthStateChange((event) => { if(event==='SIGNED_IN'||event==='SIGNED_OUT'){ if(event==='SIGNED_OUT'){state.admin=false;state.initialized=false;} if(document.querySelector('#cka-admin.active')) renderAdmin(); } });
+})();
 })();
