@@ -90,6 +90,7 @@ try {
     .cka-next-race-inner{display:flex;width:min(1480px,100%);min-height:50px;margin:0 auto;padding:7px clamp(16px,3.2vw,48px);align-items:center;justify-content:space-between;gap:14px}
     .cka-next-race-info{display:flex;min-width:0;align-items:center;gap:12px}
     .cka-race-flag{width:25px;height:25px;flex:0 0 25px;border:1px solid rgba(255,255,255,.24);border-radius:50%;background-color:#f5f5f5;background-image:linear-gradient(45deg,#17191d 25%,transparent 25%,transparent 75%,#17191d 75%),linear-gradient(45deg,#17191d 25%,transparent 25%,transparent 75%,#17191d 75%);background-position:0 0,5px 5px;background-size:10px 10px}
+    .cka-next-race-track{display:block;width:112px;height:48px;flex:0 0 112px;object-fit:contain;border:0;border-radius:0;background:transparent;mix-blend-mode:screen}
     .cka-next-race-copy{display:grid;min-width:0;gap:2px}
     .cka-next-race-kicker{color:#d4af37;font-size:9px;font-weight:850;letter-spacing:.14em;text-transform:uppercase}
     .cka-next-race-title{overflow:hidden;color:#f5f6f8;font-size:14px;font-weight:850;text-overflow:ellipsis;white-space:nowrap}
@@ -134,7 +135,7 @@ try {
     .cka-podium-rank{font-size:25px;font-weight:950;line-height:1;letter-spacing:-.05em}
     .cka-podium-rank small{margin-left:3px;font-size:9px;vertical-align:top;letter-spacing:0}
     .cka-podium-card:not(.is-team):before{position:absolute;z-index:1;right:0;bottom:0;width:54%;height:100%;content:"";background:radial-gradient(ellipse at 72% 78%,rgba(255,255,255,.2),transparent 67%),linear-gradient(90deg,transparent,rgba(255,255,255,.045));pointer-events:none}
-    .cka-podium-avatar{position:absolute;z-index:1;right:0;bottom:0;width:57%;height:100%;max-width:270px;max-height:100%;border:0!important;border-radius:0!important;background:transparent!important;object-fit:contain!important;object-position:center bottom!important;opacity:1;mask-image:linear-gradient(90deg,transparent 0%,#000 20%,#000 100%);filter:drop-shadow(-10px 0 14px rgba(0,0,0,.3))}
+    .cka-podium-avatar{position:absolute;z-index:1;right:0;bottom:0;width:57%;height:100%;max-width:270px;max-height:100%;border:0!important;border-radius:0!important;background:transparent!important;object-fit:contain!important;object-position:center bottom!important;opacity:1;mask-image:linear-gradient(90deg,transparent 0%,#000 25%,#000 82%,transparent 100%),linear-gradient(0deg,transparent 0%,#000 34%,#000 100%);mask-composite:intersect;-webkit-mask-image:linear-gradient(90deg,transparent 0%,#000 25%,#000 82%,transparent 100%),linear-gradient(0deg,transparent 0%,#000 34%,#000 100%);-webkit-mask-composite:source-in;filter:drop-shadow(-10px 0 14px rgba(0,0,0,.3))}
     .cka-podium-copy{position:relative;z-index:2;max-width:62%;text-shadow:0 2px 8px rgba(0,0,0,.5)}
     .cka-podium-name{display:block;margin:0 0 3px;font-size:clamp(15px,1.7vw,20px);font-weight:900;letter-spacing:-.03em}
     .cka-podium-team{display:block;font-size:11px;font-weight:650;opacity:.88}
@@ -183,6 +184,19 @@ try {
     #teams .teamrow{background:rgba(15,29,46,.92);border-color:rgba(76,112,146,.24)}
     #teams .teamrow.headrow{background:linear-gradient(100deg,#182c40,#1a2638)}
     .pilotcards{gap:12px;border:0;background:transparent;overflow:visible}
+    .pilot-h2h{margin:0 0 22px;padding:18px;border:1px solid rgba(255,255,255,.1);border-radius:18px;background:linear-gradient(145deg,#151a22,#0f1319);box-shadow:0 16px 36px rgba(0,0,0,.2)}
+    .pilot-h2h-head{display:flex;align-items:flex-end;justify-content:space-between;gap:14px;margin-bottom:16px}.pilot-h2h-title{margin:0;font-size:18px;font-weight:900;letter-spacing:-.03em}.pilot-h2h-subtitle{margin:4px 0 0;color:#9cacc2;font-size:12px}
+    .pilot-h2h-pickers{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px}.pilot-h2h-picker{display:grid;gap:6px;color:#9cacc2;font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase}
+    .pilot-h2h-picker select{width:100%;min-height:42px;padding:9px 34px 9px 12px;border:1px solid rgba(255,255,255,.14);border-radius:9px;background:#0c1016;color:#f5f7fb;font-family:inherit;font-size:13px;font-weight:600;letter-spacing:normal;text-transform:none}
+    .pilot-h2h-versus{display:grid;grid-template-columns:minmax(0,1fr) 54px minmax(0,1fr);align-items:center;gap:12px;margin:14px 0;padding:14px;border-radius:12px;background:rgba(255,255,255,.025)}
+    .pilot-h2h-person{display:flex;min-width:0;align-items:center;gap:10px}.pilot-h2h-person:last-child{flex-direction:row-reverse;text-align:right}.pilot-h2h-person img,.pilot-h2h-person .placeholder{width:48px;height:48px;flex:0 0 48px;border:1px solid rgba(255,255,255,.12);border-radius:50%;object-fit:cover}
+    .pilot-h2h-person strong{display:block;overflow:hidden;font-size:13px;text-overflow:ellipsis}.pilot-h2h-person small{display:block;margin-top:3px;color:#9cacc2;font-size:10px}
+    .pilot-h2h-vs{color:#d4af37;font-size:13px;font-weight:950;text-align:center;letter-spacing:.1em}
+    .pilot-h2h-metrics{display:grid;gap:8px}.pilot-h2h-metric{display:grid;grid-template-columns:minmax(34px,1fr) minmax(95px,1.2fr) minmax(34px,1fr);align-items:center;gap:9px;min-height:38px}
+    .pilot-h2h-value{font-size:14px;font-weight:900}.pilot-h2h-value:last-child{text-align:right}.pilot-h2h-value.is-ahead{color:#f3d35c}.pilot-h2h-label{color:#aeb8c5;font-size:11px;text-align:center}
+    .pilot-h2h-bar{grid-column:1/-1;display:flex;height:4px;overflow:hidden;border-radius:9px;background:#252a32}.pilot-h2h-bar-a,.pilot-h2h-bar-b{height:100%;background:#d4af37;transition:width .2s ease}.pilot-h2h-bar-b{background:#75869c}
+    .pilot-h2h-rounds{margin-top:15px;overflow-x:auto;border:1px solid rgba(255,255,255,.08);border-radius:10px;scrollbar-width:thin}.pilot-h2h-rounds table{width:100%;min-width:500px;border-collapse:collapse;font-size:11px}.pilot-h2h-rounds th,.pilot-h2h-rounds td{padding:9px 10px;border-bottom:1px solid rgba(255,255,255,.07);text-align:center;white-space:nowrap}.pilot-h2h-rounds th{color:#9cacc2;font-size:9px;letter-spacing:.06em;text-transform:uppercase}.pilot-h2h-rounds td:first-child,.pilot-h2h-rounds th:first-child{text-align:left}.pilot-h2h-rounds tr:last-child td{border-bottom:0}.pilot-h2h-rounds .h2h-a{color:#f3d35c;font-weight:850}.pilot-h2h-rounds .h2h-b{color:#d6e2f2;font-weight:850}.pilot-h2h-rounds .h2h-tie{color:#9cacc2}
+    @media(max-width:560px){.pilot-h2h{padding:13px;border-radius:14px}.pilot-h2h-head{align-items:flex-start;flex-direction:column;gap:5px}.pilot-h2h-pickers{grid-template-columns:1fr;gap:8px}.pilot-h2h-versus{grid-template-columns:minmax(0,1fr) 34px minmax(0,1fr);gap:6px;padding:10px}.pilot-h2h-person{gap:7px}.pilot-h2h-person img,.pilot-h2h-person .placeholder{width:38px;height:38px;flex-basis:38px}.pilot-h2h-person strong{font-size:11px}.pilot-h2h-person small{font-size:9px}.pilot-h2h-value{font-size:13px}.pilot-h2h-metric{grid-template-columns:minmax(28px,1fr) minmax(90px,1.4fr) minmax(28px,1fr);gap:6px}}
     .pilot-card{border:1px solid rgba(74,116,154,.4)!important;border-radius:16px!important;background:linear-gradient(120deg,rgba(19,34,52,.98),rgba(13,24,39,.98))!important;box-shadow:0 12px 30px rgba(0,0,0,.17)}
     .pilot-card:hover{border-color:rgba(255,165,60,.55)!important;transform:translateY(-2px)}
     .result-buttons{display:flex;gap:9px;overflow-x:auto;padding:4px 2px 12px;scrollbar-width:thin}
@@ -195,7 +209,7 @@ try {
     footer.wrap{display:flex;justify-content:space-between;gap:12px;padding:18px 4px 24px;border-top:1px solid rgba(74,116,154,.25);color:#8394aa;font-size:11px}
     @media(max-width:850px){.wrap{width:min(100% - 24px,1480px)}.top{height:auto!important;min-height:68px!important;padding:8px 12px!important;gap:8px}.top .brand{font-size:13px}.top .brand img{width:34px!important;height:34px!important}.top .tabs{gap:2px}.top .tab{padding:9px 8px;font-size:11px}.hero{min-height:260px}.hero:after{right:-5%;width:240px;height:240px;opacity:.1}}
     @media(max-width:560px){.wrap{width:calc(100% - 20px)}.top{position:relative;top:0;flex-wrap:wrap;border-radius:16px!important}.top .brand{font-size:12px}.top .tabs{width:100%;justify-content:flex-start;margin:0;order:2}.top .tab{padding:8px 10px;font-size:10px}.hero{min-height:250px;margin-top:12px;padding:25px 21px;border-radius:18px}.hero h1{max-width:340px;font-size:clamp(33px,10vw,48px)}.hero p{max-width:300px;font-size:13px}.hero:after{right:-44px;top:24%;width:190px;height:190px}.head{display:block;margin:20px 2px 12px}.head p{margin-top:8px}.note{font-size:11px}.scroll{border-radius:14px}footer.wrap{display:block;line-height:1.8}}
-    @media(max-width:560px){.cka-next-race-inner{min-height:46px;padding:6px 12px;gap:8px}.cka-next-race-info{gap:8px}.cka-race-flag{width:21px;height:21px;flex-basis:21px;background-size:8px 8px;background-position:0 0,4px 4px}.cka-next-race-title{max-width:calc(100vw - 150px);font-size:12px}.cka-next-race-meta{max-width:calc(100vw - 150px);font-size:9px}.cka-next-race-calendar{padding:7px;border:0;font-size:0}.cka-next-race-calendar:after{content:"›";font-size:20px;line-height:12px}}
+    @media(max-width:560px){.cka-next-race-inner{min-height:46px;padding:6px 12px;gap:8px}.cka-next-race-info{gap:8px}.cka-race-flag{width:21px;height:21px;flex-basis:21px;background-size:8px 8px;background-position:0 0,4px 4px}.cka-next-race-track{width:68px;height:36px;flex-basis:68px}.cka-next-race-title{max-width:calc(100vw - 222px);font-size:12px}.cka-next-race-meta{max-width:calc(100vw - 222px);font-size:9px}.cka-next-race-calendar{padding:7px;border:0;font-size:0}.cka-next-race-calendar:after{content:"›";font-size:20px;line-height:12px}}
     .top{height:auto!important;min-height:64px;padding-top:8px;padding-bottom:8px}.top .tabs{height:auto;flex-wrap:wrap;overflow:visible;justify-content:flex-end}
     .cka-extra{margin-top:24px}.cka-extra[hidden]{display:none!important}
     .cka-regulation-intro{display:flex;align-items:center;justify-content:space-between;gap:18px;flex-wrap:wrap;margin:0 4px 14px;padding:16px 18px;border:1px solid rgba(212,175,55,.25);border-radius:14px;background:linear-gradient(115deg,rgba(212,175,55,.09),rgba(16,31,48,.78));color:#c3ccd7;line-height:1.55}
@@ -207,6 +221,14 @@ try {
     @media(max-width:560px){.cka-regulation-frame{height:75vh;min-height:520px}.cka-regulation-intro{padding:14px}.cka-regulation-actions{width:100%}.cka-regulation-actions a{flex:1}}
     .cka-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px}
     .cka-card,.cka-box{padding:18px;border:1px solid #2a405e;border-radius:14px;background:#101b2b;color:#edf3fc}
+    .cka-track-diagram{display:grid;place-items:center;min-height:174px;margin:0 0 14px;padding:10px;border:1px solid rgba(255,255,255,.1);border-radius:10px;background:#030405}
+    .cka-track-diagram svg{display:block;width:100%;max-height:174px;overflow:visible}
+    .cka-track-diagram img{display:block;width:100%;height:174px;object-fit:contain}
+    .cka-track-diagram .track-edge,.cka-track-diagram .track-road,.cka-track-diagram .track-curb{fill:none;stroke-linecap:round;stroke-linejoin:round;vector-effect:non-scaling-stroke}
+    .cka-track-diagram .track-edge{stroke:#11151b;stroke-width:4.6}.cka-track-diagram .track-curb{stroke:#ef4b4b;stroke-width:4.6;stroke-dasharray:2 6}.cka-track-diagram .track-road{stroke:#f5f6f8;stroke-width:2.6}
+    .cka-track-diagram .track-start{stroke:#d4af37;stroke-width:1.7;stroke-linecap:square;vector-effect:non-scaling-stroke}
+    .cka-track-caption{display:flex;align-items:center;gap:8px;margin:-6px 0 12px;color:#9cacc2;font-size:10px;font-weight:750;letter-spacing:.12em;text-transform:uppercase}.cka-track-caption:before{width:7px;height:7px;border-radius:50%;background:#d4af37;content:""}
+    @media(max-width:560px){.cka-track-diagram{min-height:140px;padding:8px}.cka-track-diagram svg{max-height:140px}.cka-track-diagram img{height:140px}}
     .cka-card h3{margin:6px 0 10px}.cka-muted{color:#9cacc2}.cka-form{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;margin:14px 0}
     .cka-form label{display:grid;gap:6px;color:#b7c4d8;font-size:12px}.cka-form input,.cka-form select,.cka-form textarea{width:100%;padding:10px;border:1px solid #344962;border-radius:8px;background:#0b1421;color:#f5f7fb;font:inherit}
     .cka-result-toolbar{display:flex;align-items:end;gap:12px;flex-wrap:wrap;margin:16px 0}.cka-result-toolbar label{display:grid;gap:6px;color:#b7c4d8;font-size:12px}.cka-result-toolbar select{min-width:250px;padding:10px;border:1px solid #344962;border-radius:8px;background:#0b1421;color:#f5f7fb;font:inherit}.cka-result-scroll,.cka-pilots-scroll{overflow:auto;border:1px solid #2a405e;border-radius:10px}.cka-result-table,.cka-pilots-table{width:100%;min-width:1100px;border-collapse:collapse}.cka-result-table th,.cka-result-table td,.cka-pilots-table th,.cka-pilots-table td{padding:9px;border-bottom:1px solid #273950;text-align:left}.cka-result-table th,.cka-pilots-table th{color:#9cacc2;font-size:11px;text-transform:uppercase}.cka-result-table input,.cka-result-table select{max-width:150px;padding:8px;border:1px solid #344962;border-radius:7px;background:#0b1421;color:#f5f7fb;font:inherit}.cka-result-table .cka-pilot-cell{min-width:150px;font-weight:700}.cka-result-table .cka-check{width:18px;height:18px;accent-color:#ff982d}.cka-result-actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:14px 0}.cka-result-empty{padding:18px;color:#9cacc2}.cka-pilots-table{min-width:650px;margin-top:18px}.cka-pilot-inactive{color:#ffbd64}
@@ -394,6 +416,9 @@ try {
     header.top:before,header.top:after{display:none!important}
     header.top .brand{display:flex!important;align-items:center!important;gap:12px!important;color:#fff!important;font-size:18px!important;font-weight:800!important;letter-spacing:.04em!important}
     header.top .brand img{width:36px!important;height:36px!important;border-radius:6px!important}
+    header.top .brand img.cka-main-logo{width:88px!important;height:60px!important;max-width:none!important;object-fit:contain!important;border:0!important;border-radius:0!important;background:transparent!important;filter:drop-shadow(0 0 10px rgba(255,139,41,.18))!important}
+    header.top .brand .cka-brand-season{display:block!important;margin:0 0 0 1px!important;color:#d6dbe4!important;font-size:9px!important;font-weight:750!important;letter-spacing:.16em!important;white-space:nowrap!important}
+    @media(max-width:560px){header.top .brand img.cka-main-logo{width:76px!important;height:52px!important}}
     header.top .tabs{display:flex!important;gap:4px!important;min-width:0;margin:0 0 0 auto!important;padding:0!important;overflow-x:auto!important;border:0!important;background:transparent!important}
     header.top .tab{position:relative;flex:0 0 auto;min-width:0!important;padding:12px 14px!important;border:0!important;border-bottom:2px solid transparent!important;border-radius:0!important;background:transparent!important;color:var(--text-muted)!important;font-size:13px!important;font-weight:650!important;box-shadow:none!important;transition:color .2s,border-color .2s}
     header.top .tab:after{display:none!important}
@@ -458,7 +483,7 @@ try {
     #pilotcards .pilot-team-heading{display:flex!important;align-items:center!important;gap:10px!important;margin:0 0 12px!important;padding:0 2px 9px!important;border-bottom:1px solid color-mix(in srgb,var(--pilot-team-light) 42%,transparent)!important;color:#fff!important;font-size:16px!important;font-weight:850!important}
     #pilotcards .pilot-team-heading:before{width:4px;height:18px;border-radius:4px;background:var(--pilot-team-light);content:""}
     #pilotcards .pilot-team-heading small{margin-left:auto;color:#aeb8c6!important;font-size:10px!important;font-weight:650!important}
-    #pilotcards .pilot-team-grid{display:flex!important;width:100%!important;flex-flow:row nowrap!important;gap:14px!important;align-items:stretch!important;overflow-x:auto!important;padding:0 0 7px!important;scrollbar-width:thin;scrollbar-color:var(--pilot-team-light) rgba(255,255,255,.06);-webkit-overflow-scrolling:touch}
+    #pilotcards .pilot-team-grid{display:flex!important;width:100%!important;flex-flow:row nowrap!important;justify-content:center!important;gap:14px!important;align-items:stretch!important;overflow-x:auto!important;padding:0 0 7px!important;scrollbar-width:thin;scrollbar-color:var(--pilot-team-light) rgba(255,255,255,.06);-webkit-overflow-scrolling:touch}
     #pilotcards .pilot-card{--pilot-team-dark:#17415c;--pilot-team-light:#277da1;display:flex!important;flex:0 0 clamp(180px,20vw,230px)!important;width:clamp(180px,20vw,230px)!important;min-width:0!important;min-height:0!important;flex-direction:column!important;align-items:stretch!important;overflow:hidden!important;padding:10px!important;border:1px solid color-mix(in srgb,var(--pilot-team-light) 34%,transparent)!important;border-radius:10px!important;background:linear-gradient(145deg,color-mix(in srgb,var(--pilot-team-dark) 58%,#11151b),color-mix(in srgb,var(--pilot-team-light) 48%,#11151b) 48%,#11151b 100%)!important;box-shadow:0 10px 24px color-mix(in srgb,var(--pilot-team-dark) 19%,transparent)!important;backdrop-filter:none!important;cursor:pointer;transition:filter .16s,border-color .16s!important}
     #pilotcards .pilot-card:before{display:block!important;inset:0!important;background:repeating-linear-gradient(0deg,transparent 0 3px,rgba(255,255,255,.05) 3px 4px),linear-gradient(90deg,rgba(0,0,0,.08),transparent 68%)!important;opacity:1!important;pointer-events:none}
     #pilotcards .pilot-card:hover{transform:none!important;filter:brightness(1.08);border-color:rgba(255,255,255,.55)!important;box-shadow:0 12px 28px color-mix(in srgb,var(--pilot-team-dark) 40%,transparent)!important}
@@ -474,7 +499,7 @@ try {
     #pilotcards .pilot-detail-stats b{color:var(--gold)!important}
     #pilotcards .pilot-detail-stats div:nth-child(2) b,#pilotcards .pilot-detail-stats div:nth-child(3) b,#pilotcards .pilot-detail-stats div:nth-child(4) b,#pilotcards .pilot-detail-stats div:nth-child(5) b{color:var(--gold)!important}
     @media(max-width:900px){body.cka-home-active .cka-home-layout{grid-template-columns:minmax(0,1.35fr) minmax(275px,.85fr)!important;gap:14px!important}}
-    @media(max-width:680px){header.top{height:auto!important;min-height:64px!important;padding:8px 16px!important;flex-wrap:wrap!important}header.top .tabs{width:100%;margin:0!important;justify-content:flex-start!important}.cka-home-layout{margin:16px 0 24px!important}body.cka-home-active .cka-home-layout{grid-template-columns:1fr!important;gap:12px!important}.cka-home-layout>.hero{min-height:300px!important}#pilotcards .pilot-team-grid{scroll-snap-type:x proximity!important}#pilotcards .pilot-team-grid .pilot-card{scroll-snap-align:start!important}#pilotcards .pilot-card{flex-basis:175px!important;width:175px!important}}
+    @media(max-width:680px){header.top{height:auto!important;min-height:64px!important;padding:8px 16px!important;flex-wrap:wrap!important}header.top .tabs{width:100%;margin:0!important;justify-content:flex-start!important}.cka-home-layout{margin:16px 0 24px!important}body.cka-home-active .cka-home-layout{grid-template-columns:1fr!important;gap:12px!important}.cka-home-layout>.hero{min-height:300px!important}#pilotcards .pilot-team-grid{justify-content:flex-start!important;scroll-snap-type:x proximity!important}#pilotcards .pilot-team-grid .pilot-card{scroll-snap-align:start!important}#pilotcards .pilot-card{flex-basis:175px!important;width:175px!important}}
     @media(max-width:480px){header.top .tabs{gap:1px!important}header.top .tab{padding:10px 17px!important;font-size:11px!important}.cka-home-layout>.hero{min-height:270px!important;padding:24px 18px!important}#pilotcards .pilot-team-grid{gap:10px!important}#pilotcards .pilot-card{flex-basis:155px!important;width:155px!important;padding:8px!important}#pilotcards .pilot-card img,#pilotcards .pilot-card>.placeholder{height:150px!important}#pilotcards .pilot-detail-head{align-items:flex-start!important;gap:12px!important}#pilotcards .pilot-detail-head img,#pilotcards .pilot-detail-head>.placeholder{width:72px!important;height:90px!important}#pilotcards .pilot-detail-stats{grid-template-columns:repeat(2,1fr)!important}.cka-next-date{font-size:22px}}
     #classification .scroll,#teams .scroll,#teams .teams{border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important}
     #classification .row:not(.headrow),#teams .teamrow:not(.headrow){border:0!important;border-bottom:1px solid var(--border)!important;border-radius:0!important;background:#11151b!important;color:var(--text-primary)!important;box-shadow:none!important}
@@ -659,7 +684,9 @@ try {
   `;
   const hero=document.querySelector('.hero');
   const brandLabel=document.querySelector('.top .brand span');
-  if(brandLabel)brandLabel.innerHTML='CKA<small>CLUBE KART DOS AMIGOS · TEMPORADA 2026</small>';
+  const brandLogo=document.querySelector('.top .brand img');
+  if(brandLogo){brandLogo.src='assets/cka-logo-principal.png';brandLogo.alt='CKA — Clube Kart dos Amigos';brandLogo.classList.add('cka-main-logo');}
+  if(brandLabel)brandLabel.innerHTML='<small class="cka-brand-season">TEMPORADA 2026</small>';
   if(hero&&!hero.querySelector('.cka-hero-cta')){
     const cta=document.createElement('button');cta.type='button';cta.className='cka-action primary cka-hero-cta';cta.textContent='Ver classificação';
     cta.addEventListener('click',()=>{document.querySelector('.tab[data-panel="classificacao"]')?.click();document.querySelector('#classificacao')?.scrollIntoView({behavior:'smooth',block:'start'});});hero.append(cta);
@@ -1077,7 +1104,33 @@ try {
     const grouped=new Map();
     ordered.forEach(pilot=>{const teamName=publicState.teams.find(team=>team.id===pilot.default_team_id)?.name||'Sem equipe';if(!grouped.has(teamName))grouped.set(teamName,[]);grouped.get(teamName).push(pilot);});
     const teamSections=[...grouped.entries()].map(([teamName,members])=>{const colors=teamColors[teamName]||['#17415c','#277da1'];const cards=members.map(p=>`<article class="pilot-card" data-pilot-id="${html(p.id)}" style="--pilot-team-dark:${colors[0]};--pilot-team-light:${colors[1]}">${avatarMarkup(p)}<h3>${html(p.display_name)}</h3><span class="team">${html(teamName)}</span><div class="pilot-detail-stats"><div><b>${p.points}</b><span>Pontos</span></div><div><b>${p.wins}</b><span>Vitórias</span></div><div><b>${p.podiums}</b><span>Pódios</span></div><div><b>${p.starts}</b><span>Etapas</span></div></div></article>`).join('');return `<section class="pilot-team-section" style="--pilot-team-dark:${colors[0]};--pilot-team-light:${colors[1]}"><h3 class="pilot-team-heading">${html(teamName)}<small>${members.length} ${members.length===1?'piloto':'pilotos'}</small></h3><div class="pilot-team-grid" style="--team-pilot-count:${members.length}">${cards}</div></section>`;}).join('');
-    replaceHTML(root,`<div class="pilot-grid">${teamSections}</div>`);
+    root.headToHeadPilots=ordered;
+    const compareMarkup=renderPilotHeadToHead(ordered);
+    replaceHTML(root,`${compareMarkup}<div class="pilot-grid">${teamSections}</div>`);
+    if(!root.dataset.headToHeadBound){
+      root.dataset.headToHeadBound='true';
+      root.addEventListener('change',event=>{if(event.target.matches('[data-h2h-select]')){const selects=root.querySelectorAll('[data-h2h-select]'),pilots=root.headToHeadPilots||[];if(selects.length===2&&selects[0].value===selects[1].value){const other=selects[0]===event.target?selects[1]:selects[0];other.value=[...other.options].find(option=>option.value!==event.target.value)?.value||'';}const compare=root.querySelector('.pilot-h2h');if(compare){const a=pilots.find(p=>String(p.id)===selects[0].value),b=pilots.find(p=>String(p.id)===selects[1].value);replaceHTML(compare.querySelector('.pilot-h2h-content'),buildPilotHeadToHeadContent(a,b));}}});
+    }
+  }
+  function renderPilotHeadToHead(pilots){
+    const select=(side,label)=>`<label class="pilot-h2h-picker">${label}<select data-h2h-select="${side}" aria-label="${label}">${pilots.map((p,index)=>`<option value="${html(p.id)}" ${index===(side==='b'?1:0)?'selected':''}>${html(p.display_name)}</option>`).join('')}</select></label>`;
+    const a=pilots[0],b=pilots[1];
+    if(!a||!b)return '';
+    const compare=buildPilotHeadToHeadContent(a,b);
+    return `<section class="pilot-h2h" aria-labelledby="pilot-h2h-title"><div class="pilot-h2h-head"><div><h3 class="pilot-h2h-title" id="pilot-h2h-title">Confronto direto</h3><p class="pilot-h2h-subtitle">Escolha dois pilotos e compare a temporada etapa a etapa.</p></div></div><div class="pilot-h2h-pickers">${select('a','Piloto 1')}${select('b','Piloto 2')}</div><div class="pilot-h2h-content">${compare}</div></section>`;
+  }
+  function buildPilotHeadToHeadContent(a,b){
+    if(!a||!b)return '';
+    const stages=publicState.races.filter(r=>r.status==='completed'&&r.results_published).sort((x,y)=>x.round_number-y.round_number);
+    const rowFor=(pilot,race)=>publicState.stagePoints.find(row=>row.pilot_id===pilot.id&&row.race_id===race.id);
+    const finish=row=>{const n=Number(row?.finish_position);return Number.isFinite(n)&&n>0?n:null;};
+    const net=row=>row?(Number(row.race_points)||0)-(Number(row.penalty_points)||0):null;
+    let aRounds=0,bRounds=0,tied=0;
+    const rows=stages.map(race=>{const ar=rowFor(a,race),br=rowFor(b,race),ap=finish(ar),bp=finish(br);let winner='tie';if(ap&&bp&&ap!==bp){winner=ap<bp?'a':'b';if(winner==='a')aRounds++;else bRounds++;}else if(ap&& !bp){winner='a';aRounds++;}else if(bp&&!ap){winner='b';bRounds++;}else tied++;return `<tr><td>Etapa ${race.round_number}<small class="cka-muted"> · ${html(race.venue)}</small></td><td class="${winner==='a'?'h2h-a':winner==='tie'?'h2h-tie':''}">${ap?`${ap}º · ${net(ar)} pts`:'—'}</td><td class="${winner==='b'?'h2h-b':winner==='tie'?'h2h-tie':''}">${bp?`${bp}º · ${net(br)} pts`:'—'}</td></tr>`;}).join('');
+    const best=p=>{const positions=stages.map(r=>finish(rowFor(p,r))).filter(Boolean);return positions.length?`${Math.min(...positions)}º`:'—';};
+    const metrics=[['Pontos',a.points,b.points,false],['Vitórias',a.wins,b.wins,false],['Top 5',a.podiums,b.podiums,false],['Etapas',a.starts,b.starts,false],['Melhor chegada',best(a),best(b),true],['Etapas à frente',aRounds,bRounds,false]];
+    const metricMarkup=metrics.map(([label,av,bv,lowerBetter])=>{const numericA=Number(String(av).replace('º','')),numericB=Number(String(bv).replace('º','')),numeric=Number.isFinite(numericA)&&Number.isFinite(numericB),winner=numeric?(numericA===numericB?'tie':(numericA>numericB)!==lowerBetter?'a':'b'):'tie';let left=50,right=50;if(numeric&&(numericA||numericB)){left=Math.max(8,Math.min(92,numericA/(numericA+numericB)*100));right=100-left;if(lowerBetter)[left,right]=[right,left];}return `<div class="pilot-h2h-metric"><strong class="pilot-h2h-value ${winner==='a'?'is-ahead':''}">${html(av)}</strong><span class="pilot-h2h-label">${html(label)}</span><strong class="pilot-h2h-value ${winner==='b'?'is-ahead':''}">${html(bv)}</strong><div class="pilot-h2h-bar" aria-hidden="true"><span class="pilot-h2h-bar-a" style="width:${left}%"></span><span class="pilot-h2h-bar-b" style="width:${right}%"></span></div></div>`;}).join('');
+    return `<div class="pilot-h2h-versus"><div class="pilot-h2h-person">${avatarMarkup(a)}<div><strong>${html(a.display_name)}</strong><small>${html(a.teamName||'')}</small></div></div><span class="pilot-h2h-vs" aria-label="versus">VS</span><div class="pilot-h2h-person">${avatarMarkup(b)}<div><strong>${html(b.display_name)}</strong><small>${html(b.teamName||'')}</small></div></div></div><div class="pilot-h2h-metrics">${metricMarkup}</div><div class="pilot-h2h-rounds"><table><thead><tr><th>Etapa</th><th>${html(a.display_name)}</th><th>${html(b.display_name)}</th></tr></thead><tbody>${rows||'<tr><td colspan="3">Ainda não há etapas publicadas para comparar.</td></tr>'}</tbody></table></div>`;
   }
   function renderLiveResults(selectedRound) {
     const buttonBox=document.querySelector('#resultbuttons'),resultBox=document.querySelector('#results');if(!buttonBox||!resultBox)return;
@@ -1113,11 +1166,18 @@ try {
     const date=new Date(`${next.race_date}T12:00:00`).toLocaleDateString('pt-BR',{day:'2-digit',month:'long',year:'numeric'});
     replaceHTML(gridBox,`<section class="cka-grid-hero"><span class="cka-grid-kicker">Etapa ${next.round_number} · Ordem oficial de largada</span><h3>O grid está definido.</h3><p class="cka-grid-meta">${html(date)} · ${html(next.venue)} · ${html(String(next.start_time||'').slice(0,5))} · ${html(next.location)}</p></section><div class="cka-grid-public">${rows.map(row=>{const pilot=publicState.pilots.find(item=>item.id===row.pilot_id);if(!pilot)return '';return `<article class="cka-grid-pilot"><b class="cka-grid-pilot-pos">P${row.starting_position}</b>${avatarMarkup(pilot)}<strong class="cka-grid-pilot-name">${html(pilot.display_name)}</strong></article>`;}).join('')}</div>`);
   }
+  function calendarTrackImage(venue=''){
+    const key=String(venue).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
+    if(/kartodromo\s+ayrton\s+senna/.test(key))return 'assets/kartodromo-ayrton-senna.png';
+    if(/\bakp\b|kart\s*point/.test(key))return 'assets/akp-kart-point.png';
+    if(/brasilia\s*kart/.test(key))return 'assets/brasilia-kart.png';
+    return '';
+  }
   function renderNextRaceBar(){
     const header=document.querySelector('header.top');if(!header)return;
     let strip=document.querySelector('#cka-next-race-topbar');
     if(!strip){
-      strip=document.createElement('div');strip.id='cka-next-race-topbar';strip.className='cka-next-race-topbar';strip.innerHTML='<div class="cka-next-race-inner"><div class="cka-next-race-info"><span class="cka-race-flag" aria-hidden="true"></span><div class="cka-next-race-copy"><span class="cka-next-race-kicker">Próxima etapa</span><strong class="cka-next-race-title">Consultando calendário…</strong><span class="cka-next-race-meta"></span></div></div><button type="button" class="cka-next-race-calendar">Ver calendário <span aria-hidden="true">›</span></button></div>';
+      strip=document.createElement('div');strip.id='cka-next-race-topbar';strip.className='cka-next-race-topbar';strip.innerHTML='<div class="cka-next-race-inner"><div class="cka-next-race-info"><img class="cka-next-race-track" alt="" hidden><div class="cka-next-race-copy"><span class="cka-next-race-kicker">Próxima etapa</span><strong class="cka-next-race-title">Consultando calendário…</strong><span class="cka-next-race-meta"></span></div></div><button type="button" class="cka-next-race-calendar">Ver calendário <span aria-hidden="true">›</span></button></div>';
       header.insertAdjacentElement('afterend',strip);
       const alignStickyOffset=()=>{strip.style.top=`${Math.round(header.getBoundingClientRect().height)}px`;};
       alignStickyOffset();
@@ -1126,10 +1186,11 @@ try {
     }
     const today=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Sao_Paulo'}).format(new Date());
     const next=publicState.races.filter(race=>race.status==='scheduled'&&race.race_date&&race.race_date>=today).sort((a,b)=>a.race_date.localeCompare(b.race_date))[0];
-    const title=strip.querySelector('.cka-next-race-title'),meta=strip.querySelector('.cka-next-race-meta'),kicker=strip.querySelector('.cka-next-race-kicker');
-    if(!next){kicker.textContent='Próxima etapa';title.textContent='Data a confirmar';meta.textContent='Acompanhe as atualizações do calendário';return;}
+    const title=strip.querySelector('.cka-next-race-title'),meta=strip.querySelector('.cka-next-race-meta'),kicker=strip.querySelector('.cka-next-race-kicker'),track=strip.querySelector('.cka-next-race-track');
+    if(!next){kicker.textContent='Próxima etapa';title.textContent='Data a confirmar';meta.textContent='Acompanhe as atualizações do calendário';track.hidden=true;return;}
     const date=new Date(`${next.race_date}T12:00:00`).toLocaleDateString('pt-BR',{day:'2-digit',month:'short'}).replace('.','').toUpperCase();
     const time=String(next.start_time||'').slice(0,5),venue=next.venue||'Local a confirmar',location=next.location||'';
+    const trackSrc=calendarTrackImage(venue);track.hidden=!trackSrc;if(trackSrc){track.src=trackSrc;track.alt=`Traçado de ${venue}`;}
     kicker.textContent=`Próxima etapa · Etapa ${next.round_number}`;
     title.textContent=`${date} · ${venue}`;
     meta.textContent=[time,location].filter(Boolean).join(' · ');
@@ -1193,6 +1254,13 @@ try {
     };
     return map[name] ? `assets/${map[name]}` : '';
   };
+  function calendarTrack(venue='') {
+    const key=String(venue).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
+    if(/kartodromo\s+ayrton\s+senna/.test(key))return '<figure class="cka-track-diagram" role="img" aria-label="Traçado do Kartódromo Ayrton Senna"><img src="assets/kartodromo-ayrton-senna.png" alt="Traçado do Kartódromo Ayrton Senna" loading="lazy"></figure><p class="cka-track-caption">Traçado esquemático · Kartódromo Ayrton Senna · largada destacada</p>';
+    if(/\bakp\b|kart\s*point/.test(key))return '<figure class="cka-track-diagram" role="img" aria-label="Traçado da AKP"><img src="assets/akp-kart-point.png" alt="Traçado da AKP, Kart Point" loading="lazy"></figure><p class="cka-track-caption">Traçado esquemático · AKP · largada destacada</p>';
+    if(/brasilia\s*kart/.test(key))return '<figure class="cka-track-diagram" role="img" aria-label="Traçado do Brasília Kart"><img src="assets/brasilia-kart.png" alt="Traçado do Brasília Kart" loading="lazy"></figure><p class="cka-track-caption">Traçado esquemático · Brasília Kart · largada destacada</p>';
+    return '<figure class="cka-track-diagram" aria-label="Traçado da pista indisponível"><span class="cka-muted">Traçado não disponível</span></figure>';
+  }
   async function loadCalendar() {
     calendarBox.innerHTML = '<p class="cka-muted">Carregando calendário…</p>';
     const [{data:races,error}, {data:winners}] = await Promise.all([
@@ -1206,7 +1274,7 @@ try {
       const winner=r.status==='completed'&&r.results_published?winnerMap.get(r.id):null;
       let pic=winner?.photo_url||assetPhoto(winner?.winner_name);
       if(!winner?.photo_url&&winner?.winner_photo_path)pic=db.storage.from('cka-media').getPublicUrl(winner.winner_photo_path).data.publicUrl;
-      return `<article class="cka-card"><div class="ey">Etapa ${r.round_number}</div><h3>${html(r.venue)}</h3><p>${new Date(`${r.race_date}T12:00:00`).toLocaleDateString('pt-BR')} · ${html(String(r.start_time).slice(0,5))}</p><p class="cka-muted">${html(r.location)}</p>${winner?.winner_name?`<div class="cka-winner">${pic?`<img src="${html(pic)}" alt="Foto de ${html(winner.winner_name)}">`:''}<strong>Vencedor: ${html(winner.winner_name)}</strong></div>`:`<p class="cka-muted">${r.status==='completed'?'Resultado ainda não publicado':'Etapa prevista'}</p>`}</article>`;
+      return `<article class="cka-card">${calendarTrack(r.venue)}<div class="ey">Etapa ${r.round_number}</div><h3>${html(r.venue)}</h3><p>${new Date(`${r.race_date}T12:00:00`).toLocaleDateString('pt-BR')} · ${html(String(r.start_time).slice(0,5))}</p><p class="cka-muted">${html(r.location)}</p>${winner?.winner_name?`<div class="cka-winner">${pic?`<img src="${html(pic)}" alt="Foto de ${html(winner.winner_name)}">`:''}<strong>Vencedor: ${html(winner.winner_name)}</strong></div>`:`<p class="cka-muted">${r.status==='completed'?'Resultado ainda não publicado':'Etapa prevista'}</p>`}</article>`;
     }).join('')}</div>`;
   }
   async function loadMedia(type) {
