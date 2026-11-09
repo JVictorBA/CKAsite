@@ -714,6 +714,15 @@ try {
     html.cka-light-theme .cka-standings-widget,html.cka-light-theme .cka-card,html.cka-light-theme .cka-box,html.cka-light-theme .cka-result-card,html.cka-light-theme .pilot-detail,html.cka-light-theme .cka-comparison-card{background:#fff!important;border-color:#d5dfeb!important;color:#172f4b!important;box-shadow:0 8px 24px rgba(20,49,80,.07)!important}
     html.cka-light-theme .cka-widget-kicker,html.cka-light-theme .cka-card .ey{color:#194f82!important}html.cka-light-theme .cka-season-showcase{border-color:#d7e0ea!important}html.cka-light-theme .cka-season-showcase-title{color:#173452!important}html.cka-light-theme .cka-season-switch{border-color:#d7e0ea!important}html.cka-light-theme .cka-season-switch button{color:#5a7088!important}html.cka-light-theme .cka-season-switch button[aria-pressed="true"]{color:#174f82!important}html.cka-light-theme .cka-season-switch button[aria-pressed="true"]:after{background:#174f82!important}
     html.cka-light-theme .cka-news-content,html.cka-light-theme .cka-insight-section,html.cka-light-theme .cka-next-race,html.cka-light-theme .cka-start-grid,html.cka-light-theme .cka-mini-standing{border-color:#dce5ef!important;background:#f7f9fc!important;color:#203a56!important}
+    html.cka-light-theme .cka-grid-hero{background:linear-gradient(135deg,#fff,#eaf1f8)!important;border-color:#cbd9e7!important;box-shadow:0 8px 22px rgba(20,49,80,.07)!important}
+    html.cka-light-theme .cka-grid-hero:after{color:rgba(23,79,130,.1)!important}
+    html.cka-light-theme .cka-grid-kicker{color:#174f82!important}
+    html.cka-light-theme .cka-grid-hero h3{color:#173452!important}
+    html.cka-light-theme .cka-grid-meta{color:#526a84!important}
+    html.cka-light-theme .cka-grid-pilot{background:#fff!important;border-color:#d5dfeb!important;color:#173452!important;box-shadow:0 3px 10px rgba(20,49,80,.05)!important}
+    html.cka-light-theme .cka-grid-pilot:nth-child(-n+3){background:linear-gradient(110deg,#e6eef7,#fff 65%)!important;border-color:#b8cadd!important}
+    html.cka-light-theme .cka-grid-pilot-name{color:#173452!important}
+    html.cka-light-theme .cka-grid-pilot-pos{color:#174f82!important}
     html.cka-light-theme .cka-mini-name,html.cka-light-theme .cka-widget-head h2,html.cka-light-theme .cka-most-wins-list,html.cka-light-theme .cka-news-content strong{color:#173452!important}
     html.cka-light-theme .scroll,html.cka-light-theme #teams .teams,html.cka-light-theme #results.results,html.cka-light-theme #classification.table{border-color:#d5dfeb!important;background:#fff!important;color:#172f4b!important}
     html.cka-light-theme #classification .row,html.cka-light-theme #teams .teamrow,html.cka-light-theme #results .resultrow{background:#fff!important;border-color:#e1e7ef!important;color:#203750!important}
