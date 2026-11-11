@@ -658,7 +658,10 @@ try {
       .cka-podium-score{font-size:14px!important}
     }
     @media(max-width:680px){
-      #classificacao .scroll{position:relative!important;width:100%!important;max-width:100%!important;max-height:none!important;overflow-x:auto!important;overflow-y:hidden!important;overscroll-behavior-x:contain!important;touch-action:pan-x pan-y!important;-webkit-overflow-scrolling:touch!important;border:1px solid rgba(255,255,255,.08)!important;border-radius:9px!important;background:#11151b!important}
+      #classificacao .scroll{position:relative!important;width:100%!important;max-width:100%!important;max-height:none!important;overflow-x:auto!important;overflow-y:hidden!important;overscroll-behavior-x:contain!important;touch-action:pan-x pan-y!important;-webkit-overflow-scrolling:touch!important;scroll-behavior:auto!important;scroll-snap-type:none!important;scrollbar-width:auto!important;scrollbar-color:#d4af37 #252b34!important;border:1px solid rgba(255,255,255,.08)!important;border-radius:9px!important;background:#11151b!important}
+      #classificacao .scroll::-webkit-scrollbar{height:10px!important}
+      #classificacao .scroll::-webkit-scrollbar-track{border-radius:8px!important;background:#252b34!important}
+      #classificacao .scroll::-webkit-scrollbar-thumb{border:2px solid #252b34!important;border-radius:8px!important;background:#d4af37!important}
       #classificacao #classification.table{display:block!important;width:1521px!important;min-width:1521px!important;max-width:none!important;overflow:visible!important}
       #classificacao #classification .row.headrow,#classificacao #classification .row:not(.headrow){display:grid!important;box-sizing:border-box!important;width:1521px!important;min-width:1521px!important;max-width:none!important;grid-template-columns:64px 220px 132px 72px repeat(11,68px) 65px 78px 66px 76px!important;grid-auto-flow:row!important;column-gap:0!important;align-items:center!important}
       #classificacao #classification .row.headrow>:nth-child(3),#classificacao #classification .row.headrow>:nth-child(n+5),#classificacao #classification .row:not(.headrow)>.team,#classificacao #classification .row:not(.headrow)>.stage,#classificacao #classification .row:not(.headrow)>:nth-child(n+16){display:block!important}
@@ -714,6 +717,7 @@ try {
     html.cka-light-theme .cka-standings-widget,html.cka-light-theme .cka-card,html.cka-light-theme .cka-box,html.cka-light-theme .cka-result-card,html.cka-light-theme .pilot-detail,html.cka-light-theme .cka-comparison-card{background:#fff!important;border-color:#d5dfeb!important;color:#172f4b!important;box-shadow:0 8px 24px rgba(20,49,80,.07)!important}
     html.cka-light-theme .cka-widget-kicker,html.cka-light-theme .cka-card .ey{color:#194f82!important}html.cka-light-theme .cka-season-showcase{border-color:#d7e0ea!important}html.cka-light-theme .cka-season-showcase-title{color:#173452!important}html.cka-light-theme .cka-season-switch{border-color:#d7e0ea!important}html.cka-light-theme .cka-season-switch button{color:#5a7088!important}html.cka-light-theme .cka-season-switch button[aria-pressed="true"]{color:#174f82!important}html.cka-light-theme .cka-season-switch button[aria-pressed="true"]:after{background:#174f82!important}
     html.cka-light-theme .cka-news-content,html.cka-light-theme .cka-insight-section,html.cka-light-theme .cka-next-race,html.cka-light-theme .cka-start-grid,html.cka-light-theme .cka-mini-standing{border-color:#dce5ef!important;background:#f7f9fc!important;color:#203a56!important}
+    html.cka-light-theme .cka-start-grid-name{color:#173452!important;font-weight:750!important}
     html.cka-light-theme .cka-grid-hero{background:linear-gradient(135deg,#fff,#eaf1f8)!important;border-color:#cbd9e7!important;box-shadow:0 8px 22px rgba(20,49,80,.07)!important}
     html.cka-light-theme .cka-grid-hero:after{color:rgba(23,79,130,.1)!important}
     html.cka-light-theme .cka-grid-kicker{color:#174f82!important}
@@ -1177,7 +1181,6 @@ try {
       return row;
     }).join('');
     replaceHTML(root,header+rows);
-    const classificationScroll=root.closest('.scroll');if(classificationScroll)classificationScroll.scrollLeft=0;
     renderSeasonShowcase(pilots,races);
     const meta=document.querySelector('#classificacao .head>p'); if(meta)meta.textContent=`${pilots.length} pilotos · ${races.length} etapas publicadas · Δ = variação vs. etapa anterior`;
   }
